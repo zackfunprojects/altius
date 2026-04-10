@@ -15,7 +15,7 @@ export function getCorsHeaders(req: Request) {
   const origin = req.headers.get("origin") || "";
   const isAllowed =
     allowedOrigins.includes(origin) ||
-    origin.endsWith(".vercel.app"); // Allow all Vercel preview deploys
+    origin.includes("-zack-hollands-projects.vercel.app"); // Allow only this team's Vercel previews
 
   return {
     "Access-Control-Allow-Origin": isAllowed ? origin : allowedOrigins[0],

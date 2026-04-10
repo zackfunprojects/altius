@@ -1,6 +1,7 @@
 import { supabase } from './supabase'
 import { awardElevation, getElevationDelta } from './elevation'
 import { getExpeditionDay } from './expedition'
+import { logWarn } from './logger'
 
 const VALID_TRANSITIONS = {
   proposed: ['active', 'abandoned'],
@@ -491,6 +492,6 @@ async function fireLifecycleEvent(userId, trekId, eventType, title, body) {
     title,
     body,
   }).then(({ error }) => {
-    if (error) console.warn('Failed to fire expedition event:', error.message)
+    if (error) logWarn('expedition-event', 'Failed to fire event', { eventType, error: error.message })
   })
 }
