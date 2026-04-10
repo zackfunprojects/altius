@@ -33,7 +33,7 @@ export function useSherpaChat({ trekId, sectionId, mode = 'section' }) {
   }, [mode])
 
   const sendMessage = useCallback(async (text) => {
-    if (!text?.trim() || loading) return
+    if (!text?.trim() || loading) return false
 
     const requestKey = activeKeyRef.current
     appendMessage(requestKey, { role: 'user', content: text.trim() })

@@ -46,7 +46,11 @@ serve(async (req: Request) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Fetch trek, active section, and active camp in parallel
-    const [{ data: trek }, { data: activeSection }, { data: activeCamp }] = await Promise.all([
+    const [
+      { data: trek, error: trekError },
+      { data: activeSection },
+      { data: activeCamp },
+    ] = await Promise.all([
       supabase
         .from("treks")
         .select("trek_name, skill_description, difficulty, user_id")
@@ -70,7 +74,7 @@ serve(async (req: Request) => {
         .maybeSingle(),
     ]);
 
-    if (!trek) {
+    if (trekError || !trek) {
       throw new ValidationError("Trek not found");
     }
 

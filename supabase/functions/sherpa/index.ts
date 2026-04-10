@@ -141,16 +141,8 @@ serve(async (req: Request) => {
       .order("created_at", { ascending: false })
       .limit(10);
 
-    // Execute all queries in parallel
-    const [
-      { data: profile },
-      { data: trek },
-      { data: activeCamp },
-      { data: section },
-      { data: exercises },
-      { data: journal },
-      { data: notebook },
-    ] = await Promise.all([
+    // Execute all queries in parallel (capture errors for logging)
+    const results = await Promise.all([
       profilePromise,
       trekPromise,
       activeCampPromise,
@@ -159,6 +151,21 @@ serve(async (req: Request) => {
       journalPromise,
       notebookPromise,
     ]);
+
+    // Log query errors but don't fail the request
+    for (const r of results) {
+      if (r && typeof r === "object" && "error" in r && r.error) {
+        console.warn("Context query error:", r.error.message);
+      }
+    }
+
+    const profile = results[0]?.data ?? null;
+    const trek = results[1]?.data ?? null;
+    const activeCamp = results[2]?.data ?? null;
+    const section = results[3]?.data ?? null;
+    const exercises = results[4]?.data ?? null;
+    const journal = results[5]?.data ?? null;
+    const notebook = results[6]?.data ?? null;
 
     // Verify ownership for section and trek
     if (section && section.user_id !== authUserId) {
@@ -172,6 +179,21 @@ serve(async (req: Request) => {
         JSON.stringify({ error: "Access denied" }),
         { status: 403, headers: { ...cors, "Content-Type": "application/json" } }
       );
+    }
+
+    // Verify section belongs to the trek if both provided
+    if (section && trek_id && section_id) {
+      const { data: sectionCheck } = await supabase
+        .from("trail_sections")
+        .select("trek_id")
+        .eq("id", section_id)
+        .single();
+      if (sectionCheck && sectionCheck.trek_id !== trek_id) {
+        return new Response(
+          JSON.stringify({ error: "Section does not belong to this trek" }),
+          { status: 400, headers: { ...cors, "Content-Type": "application/json" } }
+        );
+      }
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -204,7 +226,7 @@ Camp Progress: ${trek.completed_camps || 0}/${trek.total_camps || 0} camps`;
       // Section context
       if (section) {
         trekBlock += `\nCurrent Section: "${section.title}" (${section.section_type})`;
-        if (chatMode === "section" && section.content?.narrative) {
+        if (chatMode === "section" && Array.isArray(section.content?.narrative)) {
           const textBlocks = section.content.narrative
             .filter((b: { type: string }) => b.type === "sherpa_text")
             .map((b: { content: string }) => b.content)
@@ -276,7 +298,7 @@ Camp Progress: ${trek.completed_camps || 0}/${trek.total_camps || 0} camps`;
         if (msg.role === "user" || msg.role === "assistant") {
           messages.push({
             role: msg.role,
-            content: typeof msg.content === "string" ? msg.content : "",
+            content: typeof msg.content === "string" ? truncate(msg.content, 2000) : "",
           });
         }
       }

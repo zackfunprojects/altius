@@ -36,22 +36,23 @@ export default function MorningQuestion({ question, trekId, userId, onClose }) {
         sourceId: null,
         trekId,
       })
+      // Mark as answered for today only on success
+      localStorage.setItem('altius_morning_q_date', new Date().toLocaleDateString('en-CA'))
+      onClose()
     } catch (err) {
       console.error('Failed to save morning question answer:', err)
+      setSubmitting(false)
+      return
     }
-
-    // Mark as answered for today
-    localStorage.setItem('altius_morning_q_date', new Date().toISOString().slice(0, 10))
-    onClose()
   }
 
   const handleDismiss = () => {
-    localStorage.setItem('altius_morning_q_date', new Date().toISOString().slice(0, 10))
+    localStorage.setItem('altius_morning_q_date', new Date().toLocaleDateString('en-CA'))
     onClose()
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-terminal-dark crt-vignette crt-scanlines flex items-center justify-center p-4">
+    <div role="dialog" aria-modal="true" aria-label="Morning question from the Sherpa" className="fixed inset-0 z-50 bg-terminal-dark crt-vignette crt-scanlines flex items-center justify-center p-4">
       <div className="w-full max-w-lg">
         {/* Greeting */}
         <div className="mb-6">

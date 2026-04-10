@@ -23,7 +23,7 @@ export default function LandingView() {
   useEffect(() => {
     if (!trek?.id || trekLoading) return
 
-    const today = new Date().toISOString().slice(0, 10)
+    const today = new Date().toLocaleDateString('en-CA')
     const lastDate = localStorage.getItem('altius_morning_q_date')
     if (lastDate === today) return
 
