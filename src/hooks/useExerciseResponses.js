@@ -9,10 +9,12 @@ export function useExerciseResponses(sectionId) {
   const fetch = useCallback(async () => {
     if (!sectionId) {
       setResponses([])
+      setError(null)
       setLoading(false)
       return
     }
     setLoading(true)
+    setError(null)
 
     const { data, error: fetchError } = await supabase
       .from('exercise_responses')

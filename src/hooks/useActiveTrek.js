@@ -12,10 +12,15 @@ export function useActiveTrek() {
 
   const fetch = useCallback(async () => {
     if (!user) {
+      setTrek(null)
+      setCamps([])
+      setCurrentSection(null)
+      setError(null)
       setLoading(false)
       return
     }
     setLoading(true)
+    setError(null)
 
     // Fetch the active trek
     const { data: trekData, error: trekError } = await supabase
@@ -52,7 +57,7 @@ export function useActiveTrek() {
 
     setCamps(campData || [])
 
-    // Find the current section (first active/unlocked section)
+    // Find the current section (first active section)
     const { data: sectionData } = await supabase
       .from('trail_sections')
       .select('*')
@@ -69,9 +74,9 @@ export function useActiveTrek() {
   useEffect(() => {
     fetch()
 
-    // Subscribe to trek changes
     if (!user) return
 
+    // Subscribe to trek and section changes scoped to this user
     const channel = supabase
       .channel(`active-trek:${user.id}`)
       .on(
@@ -81,7 +86,7 @@ export function useActiveTrek() {
       )
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'trail_sections' },
+        { event: '*', schema: 'public', table: 'trail_sections', filter: `user_id=eq.${user.id}` },
         () => fetch()
       )
       .subscribe()
@@ -89,7 +94,5 @@ export function useActiveTrek() {
     return () => supabase.removeChannel(channel)
   }, [fetch, user])
 
-  const refetch = useCallback(() => fetch(), [fetch])
-
-  return { trek, camps, currentSection, loading, error, refetch }
+  return { trek, camps, currentSection, loading, error, refetch: fetch }
 }

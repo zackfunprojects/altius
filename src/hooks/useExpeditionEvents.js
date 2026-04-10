@@ -11,10 +11,12 @@ export function useExpeditionEvents(trekId) {
   const fetch = useCallback(async () => {
     if (!user) {
       setEvents([])
+      setError(null)
       setLoading(false)
       return
     }
     setLoading(true)
+    setError(null)
 
     let query = supabase
       .from('expedition_events')
@@ -40,11 +42,13 @@ export function useExpeditionEvents(trekId) {
     async ({ eventType, title, body, elevationBonus = 0, metadata, eventTrekId }) => {
       if (!user) return
 
+      const effectiveTrekId = eventTrekId || trekId || null
+
       const { data, error: insertError } = await supabase
         .from('expedition_events')
         .insert({
           user_id: user.id,
-          trek_id: eventTrekId || trekId || null,
+          trek_id: effectiveTrekId,
           event_type: eventType,
           title,
           body: body || null,
@@ -56,7 +60,11 @@ export function useExpeditionEvents(trekId) {
 
       if (insertError) throw insertError
 
-      setEvents((prev) => [data, ...prev])
+      // Only add to local cache if it matches the current filter
+      if (!trekId || effectiveTrekId === trekId) {
+        setEvents((prev) => [data, ...prev])
+      }
+
       return data
     },
     [user, trekId]

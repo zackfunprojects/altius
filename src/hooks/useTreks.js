@@ -9,8 +9,14 @@ export function useTreks(status) {
   const [error, setError] = useState(null)
 
   const fetch = useCallback(async () => {
-    if (!user) return
+    if (!user) {
+      setTreks([])
+      setError(null)
+      setLoading(false)
+      return
+    }
     setLoading(true)
+    setError(null)
 
     let query = supabase
       .from('treks')
@@ -32,7 +38,5 @@ export function useTreks(status) {
     fetch()
   }, [fetch])
 
-  const refetch = useCallback(() => fetch(), [fetch])
-
-  return { treks, loading, error, refetch }
+  return { treks, loading, error, refetch: fetch }
 }

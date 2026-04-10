@@ -9,10 +9,12 @@ export function useCamps(trekId) {
   const fetch = useCallback(async () => {
     if (!trekId) {
       setCamps([])
+      setError(null)
       setLoading(false)
       return
     }
     setLoading(true)
+    setError(null)
 
     const { data, error: fetchError } = await supabase
       .from('camps')

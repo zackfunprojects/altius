@@ -90,6 +90,14 @@ const TERRAIN_CONFIGS = {
   },
 }
 
+function matchesKeyword(text, keyword) {
+  // Use word boundary matching to avoid false positives
+  // e.g. "ui" shouldn't match "build", "ai" shouldn't match "mountain"
+  const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const regex = new RegExp(`\\b${escaped}\\b`, 'i')
+  return regex.test(text)
+}
+
 function detectDomain(text) {
   const lower = text.toLowerCase()
   let bestDomain = 'practical' // default
@@ -97,7 +105,7 @@ function detectDomain(text) {
 
   for (const [domain, keywords] of Object.entries(DOMAIN_KEYWORDS)) {
     const score = keywords.reduce((sum, keyword) => {
-      return sum + (lower.includes(keyword) ? 1 : 0)
+      return sum + (matchesKeyword(lower, keyword) ? 1 : 0)
     }, 0)
 
     if (score > bestScore) {

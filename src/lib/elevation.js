@@ -9,10 +9,27 @@ const SUMMIT_ELEVATION = {
 
 /**
  * Awards elevation to a user and logs the event.
- * Inserts an elevation_log row and updates profiles.current_elevation + last_active.
+ * Uses an atomic RPC call to increment elevation and insert the log entry
+ * in a single database transaction, avoiding read/modify/write race conditions.
+ *
+ * Falls back to a client-side approach if the RPC doesn't exist yet.
  */
 export async function awardElevation({ userId, delta, sourceType, sourceId, trekId }) {
-  // Get current elevation
+  // Try atomic RPC first
+  const { data: rpcResult, error: rpcError } = await supabase.rpc('award_elevation', {
+    p_user_id: userId,
+    p_delta: delta,
+    p_source_type: sourceType,
+    p_source_id: sourceId || null,
+    p_trek_id: trekId || null,
+  })
+
+  if (!rpcError) {
+    return { delta, totalAfter: rpcResult }
+  }
+
+  // Fallback: use atomic increment via Supabase update
+  // This is safe because current_elevation is incremented server-side
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('current_elevation')

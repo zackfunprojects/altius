@@ -11,20 +11,24 @@ export function useProfile() {
   useEffect(() => {
     if (!user) {
       setProfile(null)
+      setError(null)
       setLoading(false)
       return
     }
 
     let channel
+    let cancelled = false
 
     async function fetch() {
       setLoading(true)
+      setError(null)
       const { data, error: fetchError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
         .single()
 
+      if (cancelled) return
       if (fetchError) setError(fetchError)
       else setProfile(data)
       setLoading(false)
@@ -43,6 +47,7 @@ export function useProfile() {
       .subscribe()
 
     return () => {
+      cancelled = true
       if (channel) supabase.removeChannel(channel)
     }
   }, [user])

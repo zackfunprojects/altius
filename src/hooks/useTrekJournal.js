@@ -12,10 +12,12 @@ export function useTrekJournal(trekId) {
   const fetch = useCallback(async () => {
     if (!user) {
       setEntries([])
+      setError(null)
       setLoading(false)
       return
     }
     setLoading(true)
+    setError(null)
 
     let query = supabase
       .from('trek_journal')
@@ -48,7 +50,13 @@ export function useTrekJournal(trekId) {
         .eq('id', user.id)
         .single()
 
-      const expeditionDay = profile ? getExpeditionDay(profile.created_at) : 1
+      let expeditionDay = 1
+      if (profile?.created_at) {
+        const computed = getExpeditionDay(profile.created_at)
+        if (Number.isFinite(computed) && computed > 0) {
+          expeditionDay = computed
+        }
+      }
 
       const { data, error: insertError } = await supabase
         .from('trek_journal')

@@ -24,6 +24,13 @@ export default defineConfig([
     },
     rules: {
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+    },
+  },
+  // Data-fetching hooks use async functions in useEffect that set state on completion.
+  // This is the standard React pattern for Supabase queries before React 19's use() API.
+  {
+    files: ['src/hooks/**/*.{js,jsx}', 'src/context/**/*.{js,jsx}', 'src/components/**/*.{js,jsx}'],
+    rules: {
       'react-hooks/set-state-in-effect': 'off',
     },
   },

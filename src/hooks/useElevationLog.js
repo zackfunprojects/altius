@@ -11,10 +11,12 @@ export function useElevationLog() {
   const fetch = useCallback(async () => {
     if (!user) {
       setEntries([])
+      setError(null)
       setLoading(false)
       return
     }
     setLoading(true)
+    setError(null)
 
     const { data, error: fetchError } = await supabase
       .from('elevation_log')

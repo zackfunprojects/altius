@@ -27,10 +27,21 @@ function lastActivityDate(elevationLog) {
 }
 
 /**
+ * Finds the gap before the most recent activity.
+ * If the user was away for 7+ days but came back today, this returns the gap length.
+ */
+function previousGap(elevationLog) {
+  if (elevationLog.length < 2) return 0
+  // elevationLog is sorted DESC - find the gap between the latest and second-latest entries
+  const latest = new Date(elevationLog[0].logged_at)
+  const previous = new Date(elevationLog[1].logged_at)
+  return Math.floor((latest - previous) / MS_PER_DAY)
+}
+
+/**
  * Returns the current weather state for the user's expedition.
  *
  * @param {Array} elevationLog - Recent elevation log entries, sorted by logged_at DESC
- * @param {Object} profile - User profile with last_active field
  * @returns {Object} Weather state with condition, sherpaLine, and visual params
  */
 export function calculateWeatherState(elevationLog) {
@@ -64,20 +75,7 @@ export function calculateWeatherState(elevationLog) {
     }
   }
 
-  // Return after 7+ day absence
-  if (daysSinceActivity >= 7 && weekSections > 0) {
-    return {
-      condition: 'fog_lifting',
-      sherpaLine: 'The fog is lifting. Good to see you on the trail again.',
-      fog: 0.4,
-      clearSky: false,
-      snowOnPeaks: false,
-      warmLight: true,
-      intensity: 0.5,
-    }
-  }
-
-  // 7+ day gap - deep fog
+  // 7+ day gap with no recent activity - deep fog
   if (daysSinceActivity >= 7) {
     return {
       condition: 'deep_fog',
@@ -87,6 +85,20 @@ export function calculateWeatherState(elevationLog) {
       snowOnPeaks: false,
       warmLight: false,
       intensity: 0.1,
+    }
+  }
+
+  // Return after a long absence - active today but the previous gap was 7+ days
+  // This detects the "just came back" state
+  if (daysSinceActivity <= 1 && previousGap(elevationLog) >= 7) {
+    return {
+      condition: 'fog_lifting',
+      sherpaLine: 'The fog is lifting. Good to see you on the trail again.',
+      fog: 0.4,
+      clearSky: false,
+      snowOnPeaks: false,
+      warmLight: true,
+      intensity: 0.5,
     }
   }
 
