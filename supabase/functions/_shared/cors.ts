@@ -11,11 +11,15 @@ if (prodOrigin) allowedOrigins.push(prodOrigin);
 const vercelUrl = Deno.env.get("VERCEL_URL");
 if (vercelUrl) allowedOrigins.push(`https://${vercelUrl}`);
 
+// Match only this project's Vercel preview URLs:
+// https://altius-{hash}-zack-hollands-projects.vercel.app
+const VERCEL_PREVIEW_RE = /^https:\/\/altius-[a-z0-9]+-zack-hollands-projects\.vercel\.app$/;
+
 export function getCorsHeaders(req: Request) {
   const origin = req.headers.get("origin") || "";
   const isAllowed =
     allowedOrigins.includes(origin) ||
-    origin.includes("-zack-hollands-projects.vercel.app"); // Allow only this team's Vercel previews
+    VERCEL_PREVIEW_RE.test(origin);
 
   return {
     "Access-Control-Allow-Origin": isAllowed ? origin : allowedOrigins[0],

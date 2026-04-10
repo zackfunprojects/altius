@@ -246,19 +246,12 @@ export async function completeTrek(trekId) {
   })
 
   if (incrError) {
-    // Last resort fallback - direct update (not atomic but functional)
-    const { data: currentProfile } = await supabase
-      .from('profiles')
-      .select('total_treks_completed')
-      .eq('id', trek.user_id)
-      .single()
-
-    if (currentProfile) {
-      await supabase
-        .from('profiles')
-        .update({ total_treks_completed: currentProfile.total_treks_completed + 1 })
-        .eq('id', trek.user_id)
-    }
+    // Log but don't fallback - a timeout doesn't mean the RPC didn't commit,
+    // and a read+write fallback risks double-incrementing.
+    logWarn('trek-complete', 'Failed to increment treks_completed via RPC', {
+      userId: trek.user_id,
+      error: incrError.message,
+    })
   }
 
   const delta = getElevationDelta('summit_completed', { difficulty: trek.difficulty })
@@ -447,19 +440,10 @@ export async function checkCampComplete(campId) {
   })
 
   if (incrError) {
-    // Fallback: direct read + update
-    const { data: currentTrek } = await supabase
-      .from('treks')
-      .select('completed_camps')
-      .eq('id', camp.trek_id)
-      .single()
-
-    if (currentTrek) {
-      await supabase
-        .from('treks')
-        .update({ completed_camps: (currentTrek.completed_camps || 0) + 1 })
-        .eq('id', camp.trek_id)
-    }
+    logWarn('camp-complete', 'Failed to increment completed_camps via RPC', {
+      trekId: camp.trek_id,
+      error: incrError.message,
+    })
   }
 
   await awardElevation({

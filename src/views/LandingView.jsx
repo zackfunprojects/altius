@@ -10,7 +10,7 @@ import SherpaTerminal from '../components/brand/SherpaTerminal'
 export default function LandingView() {
   const { signOut } = useAuth()
   const { profile } = useProfile()
-  const { trek, camps, loading: trekLoading } = useActiveTrek()
+  const { trek, camps, loading: trekLoading, error: trekError } = useActiveTrek()
 
   return (
     <div className="min-h-screen bg-catalog-cream flex flex-col">
@@ -32,6 +32,18 @@ export default function LandingView() {
           {trekLoading ? (
             <div className="text-center">
               <p className="font-mono text-trail-brown text-sm">Loading your trek...</p>
+            </div>
+          ) : trekError ? (
+            <div className="text-center space-y-4">
+              <p className="font-body text-lg text-signal-orange">
+                Could not load your trek.
+              </p>
+              <button
+                onClick={() => window.location.reload()}
+                className="px-4 py-2 bg-signal-orange text-white font-ui font-semibold rounded-md hover:bg-signal-orange/90 transition-colors text-sm"
+              >
+                Retry
+              </button>
             </div>
           ) : trek ? (
             <div className="space-y-6">
