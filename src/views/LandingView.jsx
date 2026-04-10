@@ -133,6 +133,12 @@ export default function LandingView() {
                   Continue Trek
                 </button>
                 <button
+                  onClick={() => navigate('/trail')}
+                  className="w-full py-3 bg-terminal-dark text-phosphor-green font-mono rounded-lg border border-phosphor-green/20 hover:border-phosphor-green/40 transition-colors"
+                >
+                  View Trail
+                </button>
+                <button
                   onClick={() => navigate('/chat')}
                   className="w-full py-3 border border-phosphor-green/30 text-phosphor-green bg-terminal-dark font-mono rounded-lg hover:bg-terminal-dark/90 hover:border-phosphor-green/50 transition-colors"
                 >

@@ -5,6 +5,7 @@ import AuthView from './views/AuthView'
 import LandingView from './views/LandingView'
 import LearningView from './views/LearningView'
 import SherpaChat from './views/SherpaChat'
+import TrailView from './views/TrailView'
 import OnboardingFlow from './views/OnboardingFlow'
 
 function ProtectedRoute({ children }) {
@@ -69,6 +70,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <LearningView />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/trail"
+        element={
+          <ProtectedRoute>
+            <TrailView />
           </ProtectedRoute>
         }
       />
