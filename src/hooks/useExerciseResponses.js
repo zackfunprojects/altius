@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 
-export function useExerciseResponses(sectionId) {
+export function useExerciseResponses(sectionId, exerciseIndex) {
   const [responses, setResponses] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -16,16 +16,22 @@ export function useExerciseResponses(sectionId) {
     setLoading(true)
     setError(null)
 
-    const { data, error: fetchError } = await supabase
+    let query = supabase
       .from('exercise_responses')
       .select('*')
       .eq('section_id', sectionId)
       .order('attempt_number')
 
+    if (exerciseIndex !== undefined && exerciseIndex !== null) {
+      query = query.eq('exercise_index', exerciseIndex)
+    }
+
+    const { data, error: fetchError } = await query
+
     if (fetchError) setError(fetchError)
     else setResponses(data || [])
     setLoading(false)
-  }, [sectionId])
+  }, [sectionId, exerciseIndex])
 
   useEffect(() => {
     fetch()
