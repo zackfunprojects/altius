@@ -4,7 +4,7 @@ import WordMark from '../components/brand/WordMark'
 import ElevationCounter from '../components/brand/ElevationCounter'
 
 export default function LandingView() {
-  const { user, signOut } = useAuth()
+  const { signOut } = useAuth()
 
   return (
     <div className="min-h-screen bg-catalog-cream flex flex-col">
