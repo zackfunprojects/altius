@@ -1,18 +1,47 @@
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useProfile } from '../hooks/useProfile'
 import { useActiveTrek } from '../hooks/useActiveTrek'
+import { getMorningQuestion } from '../lib/sherpa'
 import FourColorBar from '../components/brand/FourColorBar'
 import WordMark from '../components/brand/WordMark'
 import ElevationCounter from '../components/brand/ElevationCounter'
 import DifficultyBadge from '../components/brand/DifficultyBadge'
-import SherpaTerminal from '../components/brand/SherpaTerminal'
+import MorningQuestion from '../components/MorningQuestion'
 
 export default function LandingView() {
   const navigate = useNavigate()
-  const { signOut } = useAuth()
+  const { user, signOut } = useAuth()
   const { profile } = useProfile()
   const { trek, camps, loading: trekLoading, error: trekError } = useActiveTrek()
+
+  const [morningQuestion, setMorningQuestion] = useState(null)
+  const [showMorningQuestion, setShowMorningQuestion] = useState(false)
+
+  // Check for morning question on mount
+  useEffect(() => {
+    if (!trek?.id || trekLoading) return
+
+    const today = new Date().toISOString().slice(0, 10)
+    const lastDate = localStorage.getItem('altius_morning_q_date')
+    if (lastDate === today) return
+
+    let cancelled = false
+    async function fetchQuestion() {
+      try {
+        const question = await getMorningQuestion({ trekId: trek.id })
+        if (!cancelled && question) {
+          setMorningQuestion(question)
+          setShowMorningQuestion(true)
+        }
+      } catch {
+        // Silently skip - don't block the app
+      }
+    }
+    fetchQuestion()
+    return () => { cancelled = true }
+  }, [trek?.id, trekLoading])
 
   return (
     <div className="min-h-screen bg-catalog-cream flex flex-col">
@@ -95,26 +124,52 @@ export default function LandingView() {
                 </div>
               </div>
 
-              {/* Continue button */}
-              <button
-                onClick={() => navigate('/learn')}
-                className="w-full py-3 bg-summit-cobalt text-white font-ui font-semibold rounded-lg hover:bg-summit-cobalt/90 transition-colors"
-              >
-                Continue Trek
-              </button>
+              {/* Action buttons */}
+              <div className="space-y-3">
+                <button
+                  onClick={() => navigate('/learn')}
+                  className="w-full py-3 bg-summit-cobalt text-white font-ui font-semibold rounded-lg hover:bg-summit-cobalt/90 transition-colors"
+                >
+                  Continue Trek
+                </button>
+                <button
+                  onClick={() => navigate('/chat')}
+                  className="w-full py-3 border border-phosphor-green/30 text-phosphor-green bg-terminal-dark font-mono rounded-lg hover:bg-terminal-dark/90 hover:border-phosphor-green/50 transition-colors"
+                >
+                  Talk to the Sherpa
+                </button>
+              </div>
             </div>
           ) : (
-            <div className="text-center">
-              <h1 className="font-display text-3xl sm:text-4xl text-ink mb-4">
-                Welcome, Climber
-              </h1>
-              <p className="font-body text-lg text-trail-brown">
-                No active trek. The mountain is waiting.
-              </p>
+            <div className="text-center space-y-6">
+              <div>
+                <h1 className="font-display text-3xl sm:text-4xl text-ink mb-4">
+                  Welcome, Climber
+                </h1>
+                <p className="font-body text-lg text-trail-brown">
+                  No active trek. The mountain is waiting.
+                </p>
+              </div>
+              <button
+                onClick={() => navigate('/chat')}
+                className="w-full py-3 border border-phosphor-green/30 text-phosphor-green bg-terminal-dark font-mono rounded-lg hover:bg-terminal-dark/90 hover:border-phosphor-green/50 transition-colors"
+              >
+                Talk to the Sherpa
+              </button>
             </div>
           )}
         </div>
       </main>
+
+      {/* Morning Question Modal */}
+      {showMorningQuestion && morningQuestion && (
+        <MorningQuestion
+          question={morningQuestion}
+          trekId={trek?.id}
+          userId={user?.id}
+          onClose={() => setShowMorningQuestion(false)}
+        />
+      )}
     </div>
   )
 }
