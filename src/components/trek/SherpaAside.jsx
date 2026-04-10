@@ -1,22 +1,16 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
-import { askSherpa } from '../../lib/sherpa'
+import { useState, useRef, useEffect } from 'react'
+import { useSherpaChat } from '../../hooks/useSherpaChat'
 
 export default function SherpaAside({ open, onClose, section, trekId }) {
-  // Key conversation history by section ID
-  const [historyMap, setHistoryMap] = useState({})
+  const { messages, sendMessage, loading } = useSherpaChat({
+    trekId,
+    sectionId: section?.id,
+    mode: 'section',
+  })
+
   const [input, setInput] = useState('')
-  const [loading, setLoading] = useState(false)
   const scrollRef = useRef(null)
   const inputRef = useRef(null)
-  const activeSectionRef = useRef(section?.id)
-
-  const sectionId = section?.id
-  const messages = useMemo(() => (sectionId && historyMap[sectionId]) || [], [sectionId, historyMap])
-
-  // Track active section for stale reply detection
-  useEffect(() => {
-    activeSectionRef.current = sectionId
-  }, [sectionId])
 
   // Focus input when opened
   useEffect(() => {
@@ -32,54 +26,12 @@ export default function SherpaAside({ open, onClose, section, trekId }) {
     }
   }, [messages])
 
-  const setMessages = useCallback((updater) => {
-    if (!sectionId) return
-    setHistoryMap(prev => ({
-      ...prev,
-      [sectionId]: typeof updater === 'function' ? updater(prev[sectionId] || []) : updater,
-    }))
-  }, [sectionId])
-
-  const handleSend = useCallback(async () => {
+  const handleSend = () => {
     const text = input.trim()
-    if (!text || loading || !sectionId) return
-
-    const requestSectionId = sectionId
+    if (!text) return
     setInput('')
-    setMessages(prev => [...prev, { role: 'user', content: text }])
-    setLoading(true)
-
-    try {
-      const conversationHistory = messages.map(m => ({
-        role: m.role,
-        content: m.content,
-      }))
-
-      const response = await askSherpa({
-        message: text,
-        sectionId: requestSectionId,
-        trekId,
-        conversationHistory,
-      })
-
-      // Only append if we're still on the same section
-      if (activeSectionRef.current === requestSectionId) {
-        setHistoryMap(prev => ({
-          ...prev,
-          [requestSectionId]: [...(prev[requestSectionId] || []), { role: 'assistant', content: response }],
-        }))
-      }
-    } catch {
-      if (activeSectionRef.current === requestSectionId) {
-        setHistoryMap(prev => ({
-          ...prev,
-          [requestSectionId]: [...(prev[requestSectionId] || []), { role: 'assistant', content: 'The mountain fog is thick. Try again in a moment.' }],
-        }))
-      }
-    } finally {
-      setLoading(false)
-    }
-  }, [input, loading, sectionId, messages, trekId, setMessages])
+    sendMessage(text)
+  }
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
