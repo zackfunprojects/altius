@@ -3,6 +3,7 @@ import { useAuth } from './context/AuthContext'
 import { useProfile } from './hooks/useProfile'
 import AuthView from './views/AuthView'
 import LandingView from './views/LandingView'
+import LearningView from './views/LearningView'
 import OnboardingFlow from './views/OnboardingFlow'
 
 function ProtectedRoute({ children }) {
@@ -59,6 +60,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <LandingView />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/learn"
+        element={
+          <ProtectedRoute>
+            <LearningView />
           </ProtectedRoute>
         }
       />

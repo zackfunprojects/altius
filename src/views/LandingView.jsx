@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useProfile } from '../hooks/useProfile'
 import { useActiveTrek } from '../hooks/useActiveTrek'
@@ -8,6 +9,7 @@ import DifficultyBadge from '../components/brand/DifficultyBadge'
 import SherpaTerminal from '../components/brand/SherpaTerminal'
 
 export default function LandingView() {
+  const navigate = useNavigate()
   const { signOut } = useAuth()
   const { profile } = useProfile()
   const { trek, camps, loading: trekLoading, error: trekError } = useActiveTrek()
@@ -93,11 +95,13 @@ export default function LandingView() {
                 </div>
               </div>
 
-              {/* Sherpa message */}
-              <SherpaTerminal>
-                {'>'} The Learning View is coming next. Your trail is mapped and your first
-                section is unlocked.
-              </SherpaTerminal>
+              {/* Continue button */}
+              <button
+                onClick={() => navigate('/learn')}
+                className="w-full py-3 bg-summit-cobalt text-white font-ui font-semibold rounded-lg hover:bg-summit-cobalt/90 transition-colors"
+              >
+                Continue Trek
+              </button>
             </div>
           ) : (
             <div className="text-center">
