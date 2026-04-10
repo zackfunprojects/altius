@@ -10,7 +10,7 @@ export default function MultipleChoiceLedge({ spec, onResponseChange, disabled, 
   const handleSelect = (optionId) => {
     if (disabled) return
     setSelected(optionId)
-    onResponseChange({ selected_option_id: optionId })
+    onResponseChange?.({ selected_option_id: optionId })
   }
 
   const getOptionStyle = (option) => {

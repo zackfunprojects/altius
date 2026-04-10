@@ -29,19 +29,19 @@ export default function TrailSketchBlock({ spec }) {
 
   return (
     <div className="bg-white rounded-lg border border-trail-brown/15 p-5">
-      {spec?.title && (
-        <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-4">
+        {spec?.title && (
           <h3 className="font-display text-lg text-ink">{spec.title}</h3>
-          {steps.length > 1 && (
-            <button
-              onClick={() => setAutoPlay(!autoPlay)}
-              className="text-xs font-ui font-medium text-summit-cobalt hover:text-summit-cobalt/80 transition-colors"
-            >
-              {autoPlay ? 'Pause' : allRevealed ? 'Done' : 'Auto-play'}
-            </button>
-          )}
-        </div>
-      )}
+        )}
+        {steps.length > 1 && (
+          <button
+            onClick={() => setAutoPlay(!autoPlay)}
+            className="text-xs font-ui font-medium text-summit-cobalt hover:text-summit-cobalt/80 transition-colors ml-auto"
+          >
+            {autoPlay ? 'Pause' : allRevealed ? 'Done' : 'Auto-play'}
+          </button>
+        )}
+      </div>
 
       <div className="space-y-0">
         <AnimatePresence>

@@ -4,6 +4,10 @@ import ExerciseStatusBar from './ExerciseStatusBar'
 import MultipleChoiceLedge from '../ledges/MultipleChoiceLedge'
 import ShortAnswerLedge from '../ledges/ShortAnswerLedge'
 import WritingEditorLedge from '../ledges/WritingEditorLedge'
+import DragSequenceLedge from '../ledges/DragSequenceLedge'
+import TimelineEditorLedge from '../ledges/TimelineEditorLedge'
+import CanvasLayoutLedge from '../ledges/CanvasLayoutLedge'
+import ConversationSimLedge from '../ledges/ConversationSimLedge'
 import FileUploadLedge from '../ledges/FileUploadLedge'
 import VoiceResponseLedge from '../ledges/VoiceResponseLedge'
 
@@ -22,6 +26,7 @@ export default function ExerciseWrapper({ spec, exerciseIndex, sectionId, trekId
   )
   const [hintsRevealed, setHintsRevealed] = useState(0)
   const [userResponse, setUserResponse] = useState(null)
+  const [retryKey, setRetryKey] = useState(0)
 
   const handleResponseChange = useCallback((response) => {
     setUserResponse(response)
@@ -52,7 +57,7 @@ export default function ExerciseWrapper({ spec, exerciseIndex, sectionId, trekId
       if (result.passed) {
         setStatus('passed')
         if (onExerciseComplete) {
-          onExerciseComplete({ passed: true, attemptNumber: attempts + 1 })
+          onExerciseComplete({ passed: true, attemptNumber: attempts + 1, exerciseIndex })
         }
       } else {
         setStatus('failed')
@@ -72,6 +77,7 @@ export default function ExerciseWrapper({ spec, exerciseIndex, sectionId, trekId
     setUserResponse(null)
     setFeedback(null)
     setStatus('idle')
+    setRetryKey(prev => prev + 1)
   }
 
   const handleRequestHint = () => {
@@ -116,7 +122,15 @@ export default function ExerciseWrapper({ spec, exerciseIndex, sectionId, trekId
             disabled={ledgeDisabled}
           />
         )
-      case 'code_challenge':
+      case 'drag_sequence':
+        return (
+          <DragSequenceLedge
+            spec={spec}
+            onResponseChange={handleResponseChange}
+            disabled={ledgeDisabled}
+          />
+        )
+      case 'code_editor':
         return (
           <Suspense fallback={
             <div className="py-6 text-center text-xs font-ui text-trail-brown">
@@ -129,6 +143,30 @@ export default function ExerciseWrapper({ spec, exerciseIndex, sectionId, trekId
               disabled={ledgeDisabled}
             />
           </Suspense>
+        )
+      case 'timeline_editor':
+        return (
+          <TimelineEditorLedge
+            spec={spec}
+            onResponseChange={handleResponseChange}
+            disabled={ledgeDisabled}
+          />
+        )
+      case 'canvas_layout':
+        return (
+          <CanvasLayoutLedge
+            spec={spec}
+            onResponseChange={handleResponseChange}
+            disabled={ledgeDisabled}
+          />
+        )
+      case 'conversation_sim':
+        return (
+          <ConversationSimLedge
+            spec={spec}
+            onResponseChange={handleResponseChange}
+            disabled={ledgeDisabled}
+          />
         )
       case 'file_upload':
         return <FileUploadLedge spec={spec} onResponseChange={handleResponseChange} disabled />
@@ -169,7 +207,7 @@ export default function ExerciseWrapper({ spec, exerciseIndex, sectionId, trekId
 
           {/* Ledge component */}
           <div className="mb-3">
-            {renderLedge()}
+            <div key={retryKey}>{renderLedge()}</div>
           </div>
 
           {/* Status bar */}

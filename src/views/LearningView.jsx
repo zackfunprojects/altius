@@ -56,16 +56,11 @@ export default function LearningView() {
     setCompletedExercises(passed)
   }, [exerciseResponses])
 
-  // Reset completedExercises when section changes
-  useEffect(() => {
-    setCompletedExercises(new Set())
-  }, [displayedSection?.id])
-
-  const handleExerciseComplete = useCallback(async ({ passed, attemptNumber }) => {
+  const handleExerciseComplete = useCallback(async ({ passed, attemptNumber, exerciseIndex }) => {
     if (!passed || !displayedSection || !trek) return
     setCompletedExercises(prev => {
       const next = new Set(prev)
-      next.add(prev.size) // exercise index is the next integer
+      next.add(exerciseIndex ?? prev.size)
       return next
     })
     try {

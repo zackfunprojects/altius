@@ -64,9 +64,18 @@ function renderBlock(block, index, { exerciseCounter, sectionId, trekId, onExerc
 export default function LessonRenderer({ content, section, onComplete, completing, onExerciseComplete, completedExercises, exerciseResponses }) {
   const narrative = useMemo(() => content?.narrative || [], [content])
 
-  // Count total exercises in narrative
+  // Exercise types that are fully implemented and can gate progression
+  const GRADABLE_TYPES = new Set([
+    'multiple_choice', 'short_answer', 'writing_prompt', 'drag_sequence',
+    'code_editor', 'timeline_editor', 'canvas_layout', 'conversation_sim',
+  ])
+
+  // Count only gradable exercises (exclude deferred shell types)
   const totalExercises = useMemo(
-    () => narrative.filter(b => b.type === 'exercise').length,
+    () => narrative.filter(b =>
+      b.type === 'exercise' && GRADABLE_TYPES.has(b.spec?.exercise_type)
+    ).length,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [narrative]
   )
 
