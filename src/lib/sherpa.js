@@ -88,3 +88,58 @@ export async function askSherpa({ message, sectionId, trekId, conversationHistor
 
   return data.response
 }
+
+/**
+ * Calls the exercise-evaluate Edge Function to evaluate an exercise submission.
+ *
+ * @param {Object} params
+ * @param {Object} params.exerciseSpec - The exercise specification (type, prompt, rubric, etc.)
+ * @param {*} params.userResponse - The user's response to the exercise
+ * @param {number} [params.attemptNumber] - Which attempt this is (1-based)
+ * @param {number} [params.exerciseIndex] - Index of the exercise within the section
+ * @param {string} params.sectionId - The trail section ID
+ * @param {string} [params.trekId] - The trek ID
+ * @returns {Promise<Object>} Evaluation result with passed, score, feedback, dimension_scores, hints_for_retry
+ */
+export async function evaluateExercise({ exerciseSpec, userResponse, attemptNumber, exerciseIndex, sectionId, trekId }) {
+  const { data, error } = await supabase.functions.invoke('exercise-evaluate', {
+    body: {
+      exercise_spec: exerciseSpec,
+      user_response: userResponse,
+      attempt_number: attemptNumber || 1,
+      exercise_index: exerciseIndex ?? 0,
+      section_id: sectionId,
+      trek_id: trekId || null,
+    },
+  })
+
+  if (error) throw error
+  if (data?.error) throw new Error(data.error)
+
+  return data
+}
+
+/**
+ * Calls the scenario-advance Edge Function to get the next NPC response
+ * in a conversation simulator exercise.
+ *
+ * @param {Object} params
+ * @param {Object} params.exerciseSpec - The scenario spec (npc_character, scenario, max_turns, etc.)
+ * @param {Array} params.conversationHistory - Prior messages in the conversation
+ * @param {string} params.userMessage - The user's latest message
+ * @returns {Promise<Object>} { npc_response, turn_number, is_complete }
+ */
+export async function advanceScenario({ exerciseSpec, conversationHistory, userMessage }) {
+  const { data, error } = await supabase.functions.invoke('scenario-advance', {
+    body: {
+      exercise_spec: exerciseSpec,
+      conversation_history: conversationHistory || [],
+      user_message: userMessage,
+    },
+  })
+
+  if (error) throw error
+  if (data?.error) throw new Error(data.error)
+
+  return data
+}

@@ -1,12 +1,15 @@
+import { useMemo } from 'react'
 import SherpaTextBlock from './blocks/SherpaTextBlock'
 import TrailSketchBlock from './blocks/TrailSketchBlock'
 import DemonstrationBlock from './blocks/DemonstrationBlock'
 import GuidedAnalysisBlock from './blocks/GuidedAnalysisBlock'
-import ExerciseBlock from './blocks/ExerciseBlock'
 import ToolRecBlock from './blocks/ToolRecBlock'
 import ReflectionBlock from './blocks/ReflectionBlock'
+import ParallelRouteBlock from './blocks/ParallelRouteBlock'
+import BranchingScenarioBlock from './blocks/BranchingScenarioBlock'
+import ExerciseWrapper from '../exercises/ExerciseWrapper'
 
-function renderBlock(block, index, onExerciseComplete) {
+function renderBlock(block, index, { exerciseCounter, sectionId, trekId, onExerciseComplete, exerciseResponses }) {
   switch (block.type) {
     case 'sherpa_text':
       return <SherpaTextBlock key={index} content={block.content} />
@@ -20,14 +23,23 @@ function renderBlock(block, index, onExerciseComplete) {
     case 'guided_analysis':
       return <GuidedAnalysisBlock key={index} spec={block.spec} />
 
-    case 'exercise':
+    case 'exercise': {
+      const exerciseIndex = exerciseCounter.current++
+      const priorResponses = (exerciseResponses || []).filter(
+        r => r.exercise_index === exerciseIndex
+      )
       return (
-        <ExerciseBlock
-          key={index}
+        <ExerciseWrapper
+          key={`exercise-${index}`}
           spec={block.spec}
+          exerciseIndex={exerciseIndex}
+          sectionId={sectionId}
+          trekId={trekId}
           onExerciseComplete={onExerciseComplete}
+          priorResponses={priorResponses}
         />
       )
+    }
 
     case 'tool_recommendation':
       return <ToolRecBlock key={index} spec={block.spec} />
@@ -35,8 +47,13 @@ function renderBlock(block, index, onExerciseComplete) {
     case 'reflection_prompt':
       return <ReflectionBlock key={index} prompt={block.prompt} />
 
+    case 'parallel_route':
+      return <ParallelRouteBlock key={index} spec={block.spec} />
+
+    case 'branching_scenario':
+      return <BranchingScenarioBlock key={index} spec={block.spec} />
+
     default:
-      // Unknown block type - render as sherpa text if it has content
       if (block.content) {
         return <SherpaTextBlock key={index} content={block.content} />
       }
@@ -44,8 +61,18 @@ function renderBlock(block, index, onExerciseComplete) {
   }
 }
 
-export default function LessonRenderer({ content, section, onComplete, completing }) {
-  const narrative = content?.narrative || []
+export default function LessonRenderer({ content, section, onComplete, completing, onExerciseComplete, completedExercises, exerciseResponses }) {
+  const narrative = useMemo(() => content?.narrative || [], [content])
+
+  // Count total exercises in narrative
+  const totalExercises = useMemo(
+    () => narrative.filter(b => b.type === 'exercise').length,
+    [narrative]
+  )
+
+  const completedCount = completedExercises?.size || 0
+  const allExercisesDone = totalExercises === 0 || completedCount >= totalExercises
+  const exerciseCounter = { current: 0 }
 
   if (!narrative.length) {
     return (
@@ -71,19 +98,35 @@ export default function LessonRenderer({ content, section, onComplete, completin
 
       {/* Content blocks */}
       <div className="space-y-5">
-        {narrative.map((block, i) => renderBlock(block, i, null))}
+        {narrative.map((block, i) =>
+          renderBlock(block, i, {
+            exerciseCounter,
+            sectionId: section?.id,
+            trekId: section?.trek_id,
+            onExerciseComplete,
+            completedExercises,
+            exerciseResponses,
+          })
+        )}
       </div>
 
       {/* Section complete button */}
       {onComplete && (
-        <div className="mt-8 pt-6 border-t border-trail-brown/15 flex justify-end">
-          <button
-            onClick={onComplete}
-            disabled={completing}
-            className="px-6 py-2.5 bg-summit-cobalt text-white font-ui font-semibold rounded-lg hover:bg-summit-cobalt/90 transition-colors disabled:opacity-50"
-          >
-            {completing ? 'Marking complete...' : 'Continue to Next Section'}
-          </button>
+        <div className="mt-8 pt-6 border-t border-trail-brown/15">
+          {!allExercisesDone && (
+            <p className="text-xs font-ui text-signal-orange mb-3">
+              Complete all exercises before advancing ({completedCount}/{totalExercises})
+            </p>
+          )}
+          <div className="flex justify-end">
+            <button
+              onClick={onComplete}
+              disabled={completing || !allExercisesDone}
+              className="px-6 py-2.5 bg-summit-cobalt text-white font-ui font-semibold rounded-lg hover:bg-summit-cobalt/90 transition-colors disabled:opacity-50"
+            >
+              {completing ? 'Marking complete...' : 'Continue to Next Section'}
+            </button>
+          </div>
         </div>
       )}
     </div>

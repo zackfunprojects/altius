@@ -194,12 +194,53 @@ Generate the lesson content as a JSON object with this structure:
     }},
 
     // Exercise (for practice_ledge modality) - define the exercise spec
+    // Choose the exercise_type that best matches the skill being practiced:
     { "type": "exercise", "spec": {
-      "exercise_type": "one of: multiple_choice, short_answer, writing_prompt",
-      "prompt": "The exercise question or task",
-      "options": ["For multiple_choice only"],
-      "correct_answer": "For multiple_choice",
-      "rubric": "What a good answer looks like"
+      "exercise_type": "one of: multiple_choice, short_answer, writing_prompt, drag_sequence, code_editor, conversation_sim",
+      "prompt": "The exercise instruction in your Sherpa voice",
+      "pass_threshold": 0.7,
+      "hints": ["Hint 1 if they struggle", "Hint 2 for further help"],
+      // For multiple_choice:
+      "options": [{"id": "a", "text": "Option text"}],
+      "correct_answer": "a",
+      "explanation": "Why this is correct",
+      // For short_answer:
+      "expected_concepts": ["concept1", "concept2"],
+      "min_length": 50,
+      // For writing_prompt:
+      "constraints": {"min_words": 50, "max_words": 300},
+      "rubric": "What a good response addresses",
+      // For drag_sequence:
+      "items": [{"id": "1", "content": "Item to sequence"}],
+      "correct_order": ["1", "2", "3"],
+      // For code_editor:
+      "language": "javascript",
+      "starter_code": "function solve(input) {\\n  // your code here\\n}",
+      "test_cases": [{"input": "test input", "expected_output": "expected", "description": "Test name"}],
+      // For conversation_sim:
+      "scenario": "Scenario description",
+      "npc_character": "Character description",
+      "user_role": "Your role",
+      "objectives": ["Objective 1"],
+      "max_turns": 6,
+      "evaluation_dimensions": ["dimension1"]
+    }},
+    // Include ONLY the fields relevant to the chosen exercise_type
+
+    // Parallel route - user and Sherpa both produce from same brief, then compare
+    { "type": "parallel_route", "spec": {
+      "brief": "The shared brief/task",
+      "user_prompt": "What the climber should produce",
+      "sherpa_version": "The Sherpa's approach (hidden until climber submits)",
+      "comparison_dimensions": ["Dimension to compare"]
+    }},
+
+    // Branching scenario - interactive choices with consequences
+    { "type": "branching_scenario", "spec": {
+      "scenario_text": "The situation described",
+      "choices": [
+        { "id": "a", "text": "Choice text", "consequence": "What happens", "next_scenario": { "scenario_text": "Next situation", "choices": [...] } }
+      ]
     }},
 
     // Tool recommendation

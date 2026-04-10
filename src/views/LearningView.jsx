@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { useProfile } from '../hooks/useProfile'
 import { useActiveTrek } from '../hooks/useActiveTrek'
 import { useTrekJournal } from '../hooks/useTrekJournal'
+import { useExerciseResponses } from '../hooks/useExerciseResponses'
 import { completeSection } from '../lib/trek'
 import { generateLesson } from '../lib/sherpa'
+import { awardElevation, getElevationDelta } from '../lib/elevation'
 import FourColorBar from '../components/brand/FourColorBar'
 import ElevationCounter from '../components/brand/ElevationCounter'
 import DifficultyBadge from '../components/brand/DifficultyBadge'
@@ -29,8 +31,10 @@ export default function LearningView() {
   const [journalOpen, setJournalOpen] = useState(false)
   const [journalText, setJournalText] = useState('')
   const [completing, setCompleting] = useState(false)
+  const [completedExercises, setCompletedExercises] = useState(new Set())
 
   const { addNote } = useTrekJournal(trek?.id)
+  const { responses: exerciseResponses, refetch: refetchExercises } = useExerciseResponses(displayedSection?.id)
 
   // Sync displayedSection with currentSection when not reviewing
   useEffect(() => {
@@ -38,6 +42,45 @@ export default function LearningView() {
       setDisplayedSection(currentSection)
     }
   }, [currentSection, isReviewing])
+
+  // Build completedExercises set from prior responses
+  useEffect(() => {
+    if (!exerciseResponses?.length) {
+      setCompletedExercises(new Set())
+      return
+    }
+    const passed = new Set()
+    for (const r of exerciseResponses) {
+      if (r.passed) passed.add(r.exercise_index)
+    }
+    setCompletedExercises(passed)
+  }, [exerciseResponses])
+
+  // Reset completedExercises when section changes
+  useEffect(() => {
+    setCompletedExercises(new Set())
+  }, [displayedSection?.id])
+
+  const handleExerciseComplete = useCallback(async ({ passed, attemptNumber }) => {
+    if (!passed || !displayedSection || !trek) return
+    setCompletedExercises(prev => {
+      const next = new Set(prev)
+      next.add(prev.size) // exercise index is the next integer
+      return next
+    })
+    try {
+      await awardElevation({
+        userId: trek.user_id,
+        delta: getElevationDelta('exercise_passed', { attemptNumber }),
+        sourceType: 'exercise_passed',
+        sourceId: displayedSection.id,
+        trekId: trek.id,
+      })
+    } catch (err) {
+      console.error('Failed to award exercise elevation:', err)
+    }
+    await refetchExercises()
+  }, [displayedSection, trek, refetchExercises])
 
   // Find the active camp from the displayed section
   useEffect(() => {
@@ -252,6 +295,9 @@ export default function LearningView() {
                   section={displayedSection}
                   onComplete={isReviewing ? null : handleCompleteSection}
                   completing={completing}
+                  onExerciseComplete={isReviewing ? null : handleExerciseComplete}
+                  completedExercises={completedExercises}
+                  exerciseResponses={exerciseResponses}
                 />
               </div>
             ) : displayedSection ? (
@@ -286,15 +332,7 @@ export default function LearningView() {
                 Journal
               </button>
             </div>
-            {!isReviewing && displayedSection && lessonContent && (
-              <button
-                onClick={handleCompleteSection}
-                disabled={completing}
-                className="px-5 py-1.5 bg-summit-cobalt text-white font-ui font-semibold rounded-md text-sm hover:bg-summit-cobalt/90 transition-colors disabled:opacity-50"
-              >
-                {completing ? 'Completing...' : 'Complete Section'}
-              </button>
-            )}
+            {/* Section completion is handled in LessonRenderer */}
           </div>
         </main>
       </div>
