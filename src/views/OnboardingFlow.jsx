@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useProfile } from '../hooks/useProfile'
@@ -20,6 +20,7 @@ export default function OnboardingFlow() {
   const { user } = useAuth()
   const { updateProfile } = useProfile()
   const navigate = useNavigate()
+  const lineTimerRef = useRef(null)
 
   const [step, setStep] = useState(1)
 
@@ -40,6 +41,13 @@ export default function OnboardingFlow() {
   const [generateError, setGenerateError] = useState(null)
   const [activating, setActivating] = useState(false)
 
+  // Cleanup line timer on unmount
+  useEffect(() => {
+    return () => {
+      if (lineTimerRef.current) clearInterval(lineTimerRef.current)
+    }
+  }, [])
+
   // Step 1 -> Step 2: fetch interview questions
   const handleSkillSubmit = useCallback(async () => {
     if (!skillDescription.trim()) return
@@ -50,9 +58,12 @@ export default function OnboardingFlow() {
 
     try {
       const result = await interviewForSkill(skillDescription.trim())
-      setQuestions(result || [])
+      if (!Array.isArray(result) || result.length === 0) {
+        throw new Error('No questions received. Please try again.')
+      }
+      setQuestions(result)
     } catch (err) {
-      setInterviewError(err.message || 'Failed to generate questions')
+      setInterviewError(err.message || 'Something went wrong. Please try again.')
     } finally {
       setInterviewLoading(false)
     }
@@ -70,35 +81,41 @@ export default function OnboardingFlow() {
       answer: answers[i] || '',
     }))
 
-    // Start generation and minimum timer in parallel
     const generationPromise = generateTrek({
       skillDescription: skillDescription.trim(),
       prerequisiteAnswers,
       userId: user.id,
-      userContext: null, // First trek, no prior context
+      userContext: null,
     })
 
     const timerPromise = new Promise((resolve) =>
       setTimeout(resolve, MIN_GENERATION_MS)
     )
 
-    // Advance generation lines on a timer
-    const lineTimer = setInterval(() => {
+    // Advance generation lines on a timer (stored in ref for cleanup)
+    lineTimerRef.current = setInterval(() => {
       setGenerationLineIndex((prev) => {
         if (prev < GENERATION_LINES.length - 1) return prev + 1
-        clearInterval(lineTimer)
+        if (lineTimerRef.current) clearInterval(lineTimerRef.current)
+        lineTimerRef.current = null
         return prev
       })
     }, 1200)
 
     try {
       const [result] = await Promise.all([generationPromise, timerPromise])
-      clearInterval(lineTimer)
+      if (lineTimerRef.current) {
+        clearInterval(lineTimerRef.current)
+        lineTimerRef.current = null
+      }
       setProposal(result)
       setGenerationPhase('proposal')
     } catch (err) {
-      clearInterval(lineTimer)
-      setGenerateError(err.message || 'Failed to generate trek')
+      if (lineTimerRef.current) {
+        clearInterval(lineTimerRef.current)
+        lineTimerRef.current = null
+      }
+      setGenerateError(err.message || 'Something went wrong. Please try again.')
       setGenerationPhase(null)
     }
   }, [questions, answers, skillDescription, user])
@@ -111,14 +128,13 @@ export default function OnboardingFlow() {
     try {
       await activateTrek(proposal.trek_id)
 
-      // Save expedition_origin to profile (marks onboarding as complete)
       await updateProfile({
         expedition_origin: expeditionOrigin.trim() || skillDescription.trim(),
       })
 
       navigate('/', { replace: true })
     } catch (err) {
-      setGenerateError(err.message || 'Failed to activate trek')
+      setGenerateError(err.message || 'Something went wrong. Please try again.')
       setActivating(false)
     }
   }, [proposal, expeditionOrigin, skillDescription, updateProfile, navigate])
@@ -126,17 +142,17 @@ export default function OnboardingFlow() {
   return (
     <div className="min-h-screen bg-terminal-dark flex flex-col crt-scanlines crt-vignette">
       {/* Step indicator */}
-      <div className="px-6 pt-6">
-        <p className="font-mono text-trail-brown/50 text-xs">
+      <div className="px-4 sm:px-6 pt-6" role="status" aria-live="polite">
+        <p className="font-mono text-trail-brown/50 text-xs" aria-label={`Step ${step} of 3`}>
           {step} / 3
         </p>
       </div>
 
-      <div className="flex-1 flex items-center justify-center px-6 py-8">
+      <div className="flex-1 flex items-center justify-center px-4 sm:px-6 py-8">
         <div className="w-full max-w-xl">
           {/* Step 1: Arrival */}
           {step === 1 && (
-            <div className="space-y-6">
+            <div className="space-y-6" role="form" aria-label="Tell the Sherpa what you want to learn">
               <SherpaTerminal>
                 <TypewriterText
                   text="I have been expecting someone. What skill are you here to learn? Tell me what you want to be able to do that you cannot do today."
@@ -145,24 +161,39 @@ export default function OnboardingFlow() {
               </SherpaTerminal>
 
               <div className="space-y-4">
-                <textarea
-                  value={skillDescription}
-                  onChange={(e) => setSkillDescription(e.target.value)}
-                  placeholder="Make SaaS launch videos... Learn Python... Master negotiation..."
-                  className="w-full h-24 px-4 py-3 bg-terminal-dark/80 border border-trail-brown/30 rounded-md font-body text-catalog-cream placeholder-trail-brown/40 focus:outline-none focus:ring-1 focus:ring-phosphor-green/50 resize-none"
-                />
+                <div>
+                  <label htmlFor="skill-input" className="sr-only">
+                    What skill do you want to learn?
+                  </label>
+                  <textarea
+                    id="skill-input"
+                    value={skillDescription}
+                    onChange={(e) => setSkillDescription(e.target.value)}
+                    maxLength={500}
+                    placeholder="Make SaaS launch videos... Learn Python... Master negotiation..."
+                    className="w-full h-24 px-4 py-3 bg-terminal-dark/80 border border-trail-brown/30 rounded-md font-body text-catalog-cream placeholder-trail-brown/40 focus:outline-none focus:ring-2 focus:ring-phosphor-green/50 resize-none"
+                    autoFocus
+                  />
+                </div>
 
-                <textarea
-                  value={expeditionOrigin}
-                  onChange={(e) => setExpeditionOrigin(e.target.value)}
-                  placeholder="Why does this matter to you? (optional)"
-                  className="w-full h-16 px-4 py-3 bg-terminal-dark/80 border border-trail-brown/20 rounded-md font-body text-sm text-catalog-cream placeholder-trail-brown/30 focus:outline-none focus:ring-1 focus:ring-phosphor-green/50 resize-none"
-                />
+                <div>
+                  <label htmlFor="origin-input" className="sr-only">
+                    Why does this matter to you?
+                  </label>
+                  <textarea
+                    id="origin-input"
+                    value={expeditionOrigin}
+                    onChange={(e) => setExpeditionOrigin(e.target.value)}
+                    maxLength={500}
+                    placeholder="Why does this matter to you? (optional)"
+                    className="w-full h-16 px-4 py-3 bg-terminal-dark/80 border border-trail-brown/20 rounded-md font-body text-sm text-catalog-cream placeholder-trail-brown/30 focus:outline-none focus:ring-2 focus:ring-phosphor-green/50 resize-none"
+                  />
+                </div>
 
                 <button
                   onClick={handleSkillSubmit}
                   disabled={!skillDescription.trim()}
-                  className="w-full py-3 bg-signal-orange text-white font-ui font-semibold rounded-md hover:bg-signal-orange/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                  className="w-full py-3 bg-signal-orange text-white font-ui font-semibold rounded-md hover:bg-signal-orange/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-signal-orange/50 focus:ring-offset-2 focus:ring-offset-terminal-dark"
                 >
                   Continue
                 </button>
@@ -172,7 +203,7 @@ export default function OnboardingFlow() {
 
           {/* Step 2: Prerequisite Interview */}
           {step === 2 && (
-            <div className="space-y-6">
+            <div className="space-y-6" role="form" aria-label="Prerequisite interview">
               {interviewLoading && (
                 <SherpaTerminal>
                   <TypewriterText
@@ -185,13 +216,13 @@ export default function OnboardingFlow() {
               {interviewError && (
                 <div className="space-y-4">
                   <SherpaTerminal>
-                    <p className="text-signal-orange">
-                      The trail is obscured. {interviewError}
+                    <p className="text-signal-orange" role="alert">
+                      The trail is obscured. Please try again.
                     </p>
                   </SherpaTerminal>
                   <button
                     onClick={() => { setStep(1); setInterviewError(null) }}
-                    className="text-sm font-ui text-trail-brown/60 hover:text-catalog-cream transition-colors"
+                    className="text-sm font-ui text-trail-brown/60 hover:text-catalog-cream transition-colors focus:outline-none focus:underline"
                   >
                     Go back
                   </button>
@@ -209,26 +240,30 @@ export default function OnboardingFlow() {
 
                   {questions.map((q, i) => (
                     <div key={i} className="space-y-2">
-                      <div className="bg-terminal-dark/60 rounded px-4 py-3 border-l-2 border-summit-cobalt">
-                        <p className="font-mono text-phosphor-green/80 text-sm">
+                      <label
+                        htmlFor={`answer-${i}`}
+                        className="block bg-terminal-dark/60 rounded px-4 py-3 border-l-2 border-summit-cobalt"
+                      >
+                        <span className="font-mono text-phosphor-green/80 text-sm">
                           {q.question}
-                        </p>
-                      </div>
+                        </span>
+                      </label>
                       <input
+                        id={`answer-${i}`}
                         type="text"
                         value={answers[i] || ''}
                         onChange={(e) =>
                           setAnswers((prev) => ({ ...prev, [i]: e.target.value }))
                         }
                         placeholder="Your answer..."
-                        className="w-full px-4 py-2.5 bg-terminal-dark/80 border border-trail-brown/30 rounded-md font-body text-catalog-cream placeholder-trail-brown/40 focus:outline-none focus:ring-1 focus:ring-phosphor-green/50"
+                        className="w-full px-4 py-2.5 bg-terminal-dark/80 border border-trail-brown/30 rounded-md font-body text-catalog-cream placeholder-trail-brown/40 focus:outline-none focus:ring-2 focus:ring-phosphor-green/50"
                       />
                     </div>
                   ))}
 
                   <button
                     onClick={handleInterviewSubmit}
-                    className="w-full py-3 bg-signal-orange text-white font-ui font-semibold rounded-md hover:bg-signal-orange/90 transition-colors"
+                    className="w-full py-3 bg-signal-orange text-white font-ui font-semibold rounded-md hover:bg-signal-orange/90 transition-colors focus:outline-none focus:ring-2 focus:ring-signal-orange/50 focus:ring-offset-2 focus:ring-offset-terminal-dark"
                   >
                     Map the Trail
                   </button>
@@ -239,10 +274,10 @@ export default function OnboardingFlow() {
 
           {/* Step 3: Trek Generation */}
           {step === 3 && (
-            <div className="space-y-6">
+            <div className="space-y-6" aria-label="Trek generation">
               {generationPhase === 'generating' && (
                 <SherpaTerminal>
-                  <div className="space-y-2">
+                  <div className="space-y-2" role="status" aria-live="polite">
                     {GENERATION_LINES.slice(0, generationLineIndex + 1).map(
                       (line, i) => (
                         <div key={i}>
@@ -277,8 +312,8 @@ export default function OnboardingFlow() {
               {generateError && (
                 <div className="space-y-4">
                   <SherpaTerminal>
-                    <p className="text-signal-orange">
-                      The weather turned. {generateError}
+                    <p className="text-signal-orange" role="alert">
+                      The weather turned. Please try again.
                     </p>
                   </SherpaTerminal>
                   <button
@@ -287,7 +322,7 @@ export default function OnboardingFlow() {
                       setGenerateError(null)
                       setGenerationPhase(null)
                     }}
-                    className="text-sm font-ui text-trail-brown/60 hover:text-catalog-cream transition-colors"
+                    className="text-sm font-ui text-trail-brown/60 hover:text-catalog-cream transition-colors focus:outline-none focus:underline"
                   >
                     Go back
                   </button>

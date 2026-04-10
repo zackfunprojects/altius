@@ -4,41 +4,45 @@
  * No AI call needed - keyword matching on skill description.
  */
 
+// Keywords must be 3+ characters to avoid false positives with word-boundary matching.
+// Multi-word phrases are preferred for precision.
 const DOMAIN_KEYWORDS = {
   technical: [
     'programming', 'python', 'javascript', 'code', 'coding', 'software', 'engineering',
-    'database', 'sql', 'api', 'algorithm', 'data structure', 'web development',
-    'react', 'node', 'typescript', 'devops', 'cloud', 'aws', 'docker', 'kubernetes',
-    'machine learning', 'ai', 'artificial intelligence', 'cybersecurity', 'networking',
-    'linux', 'git', 'html', 'css', 'backend', 'frontend', 'fullstack',
+    'database', 'sql', 'algorithm', 'data structure', 'web development',
+    'react', 'node', 'typescript', 'devops', 'cloud', 'docker', 'kubernetes',
+    'machine learning', 'artificial intelligence', 'cybersecurity',
+    'linux', 'html', 'backend', 'frontend', 'fullstack', 'compiler',
+    'server', 'deploy', 'debug', 'terminal', 'command line',
   ],
   creative: [
-    'design', 'art', 'illustration', 'photography', 'video', 'animation', 'motion',
-    'graphic', 'ui', 'ux', 'figma', 'sketch', 'adobe', 'photoshop', 'drawing',
-    'painting', 'music', 'composition', 'film', 'cinematography', 'editing',
-    'color theory', 'typography', 'branding', 'logo', 'creative writing', 'poetry',
-    'launch video', 'saas video', 'visual', 'cinema',
+    'design', 'illustration', 'photography', 'video', 'animation', 'motion graphics',
+    'graphic design', 'figma', 'photoshop', 'drawing', 'painting',
+    'music production', 'composition', 'film', 'cinematography', 'video editing',
+    'color theory', 'typography', 'branding', 'logo design', 'creative writing', 'poetry',
+    'launch video', 'saas video', 'visual design', 'cinema', 'sculpting',
+    'ui design', 'ux design', 'motion design', 'sound design',
   ],
   communication: [
     'writing', 'speaking', 'presentation', 'negotiation', 'leadership', 'management',
     'sales', 'marketing', 'public speaking', 'storytelling', 'copywriting',
     'communication', 'persuasion', 'coaching', 'mentoring', 'facilitation',
-    'conflict resolution', 'interviewing', 'networking', 'pitching',
-    'team building', 'teaching', 'training',
+    'conflict resolution', 'interviewing', 'pitching',
+    'team building', 'teaching', 'training', 'rhetoric',
   ],
   analytical: [
     'math', 'mathematics', 'statistics', 'physics', 'chemistry', 'biology',
     'history', 'philosophy', 'economics', 'finance', 'accounting', 'research',
-    'data analysis', 'science', 'psychology', 'sociology', 'political',
-    'law', 'legal', 'medical', 'academic', 'theory', 'critical thinking',
-    'logic', 'reasoning', 'strategy',
+    'data analysis', 'science', 'psychology', 'sociology',
+    'law', 'legal', 'medical', 'academic', 'critical thinking',
+    'logic', 'reasoning', 'strategy', 'analytics',
   ],
   practical: [
     'cooking', 'woodworking', 'gardening', 'fitness', 'yoga', 'martial arts',
     'sewing', 'knitting', 'pottery', 'carpentry', 'plumbing', 'electrical',
-    'automotive', 'repair', 'diy', 'crafts', 'baking', 'brewing',
-    'survival', 'climbing', 'sailing', 'driving', 'instrument', 'guitar',
-    'piano', 'drums', 'sports', 'swimming', 'running',
+    'automotive', 'repair', 'crafts', 'baking', 'brewing',
+    'survival', 'climbing', 'sailing', 'driving', 'guitar',
+    'piano', 'drums', 'sports', 'swimming', 'running', 'welding',
   ],
 }
 

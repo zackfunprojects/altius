@@ -82,14 +82,17 @@ export default function TrekProposal({ proposal, onBegin, loading }) {
       )}
 
       {/* CTA */}
-      <div className="px-6 pb-6">
+      <div className="px-6 pb-6 space-y-2">
         <button
           onClick={onBegin}
           disabled={loading}
-          className="w-full py-3 bg-signal-orange text-white font-ui font-semibold rounded-md hover:bg-signal-orange/90 transition-colors disabled:opacity-50"
+          className="w-full py-3 bg-signal-orange text-white font-ui font-semibold rounded-md hover:bg-signal-orange/90 transition-colors disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-signal-orange/50"
         >
           {loading ? 'Preparing the trail...' : 'Begin the Trek'}
         </button>
+        <p className="text-center text-xs font-ui text-trail-brown/40">
+          Scope adjustment coming soon
+        </p>
       </div>
     </div>
   )

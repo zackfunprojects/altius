@@ -1,8 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 
 /**
  * Renders text letter by letter with a typewriter animation.
- * Uses the Sherpa's Courier New / phosphor-green styling by default.
  */
 export default function TypewriterText({
   text,
@@ -12,6 +11,12 @@ export default function TypewriterText({
 }) {
   const [displayed, setDisplayed] = useState('')
   const [done, setDone] = useState(false)
+  const onCompleteRef = useRef(onComplete)
+
+  // Keep ref current without re-triggering effect
+  useEffect(() => {
+    onCompleteRef.current = onComplete
+  }, [onComplete])
 
   useEffect(() => {
     setDisplayed('')
@@ -26,12 +31,12 @@ export default function TypewriterText({
       if (i >= text.length) {
         clearInterval(interval)
         setDone(true)
-        onComplete?.()
+        onCompleteRef.current?.()
       }
     }, speed)
 
     return () => clearInterval(interval)
-  }, [text, speed]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [text, speed])
 
   return (
     <span className={className}>

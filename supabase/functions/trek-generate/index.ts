@@ -1,44 +1,172 @@
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.103.0";
-import { anthropic, SHERPA_SYSTEM_PROMPT } from "../_shared/anthropic.ts";
-import { corsHeaders } from "../_shared/cors.ts";
+import {
+  anthropic,
+  SHERPA_SYSTEM_PROMPT,
+  callWithRetry,
+  validateSkillDescription,
+  validatePrerequisiteAnswers,
+  getUserIdFromRequest,
+  checkRateLimit,
+  ValidationError,
+} from "../_shared/anthropic.ts";
+import { getCorsHeaders } from "../_shared/cors.ts";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
+const VALID_DIFFICULTIES = ["day_hike", "weekend_trek", "expedition", "siege"];
+const VALID_SECTION_TYPES = [
+  "concept", "exercise", "demonstration", "guided_analysis",
+  "project_step", "reflection", "tool_tutorial", "branching_scenario", "parallel_route",
+];
+const VALID_MODALITIES = [
+  "fireside", "trail_sketch", "demonstration", "practice_ledge",
+  "over_the_shoulder", "branching_scenario", "parallel_route", "guided_analysis", "multimodal_input",
+];
+
+/**
+ * Validates the AI-generated trek structure and sanitizes fields.
+ */
+function validateTrekData(data: Record<string, unknown>): Record<string, unknown> {
+  if (!data || typeof data !== "object") {
+    throw new ValidationError("AI returned invalid trek structure");
+  }
+
+  const trekName = typeof data.trek_name === "string" ? data.trek_name.trim() : null;
+  if (!trekName) throw new ValidationError("AI did not generate a trek name");
+
+  const difficulty = VALID_DIFFICULTIES.includes(data.difficulty as string)
+    ? data.difficulty
+    : "weekend_trek";
+
+  const camps = Array.isArray(data.camps) ? data.camps : [];
+  if (camps.length === 0) throw new ValidationError("AI did not generate any camps");
+
+  // Validate camps have contiguous numbering starting from 0
+  const validatedCamps = camps.map((camp: Record<string, unknown>, i: number) => {
+    if (!camp || typeof camp !== "object") {
+      throw new ValidationError(`Camp ${i} is invalid`);
+    }
+
+    const campName = typeof camp.camp_name === "string" ? camp.camp_name : `Camp ${i}`;
+    const objectives = Array.isArray(camp.learning_objectives)
+      ? camp.learning_objectives.filter((o: unknown) => typeof o === "string")
+      : [];
+
+    const sections = Array.isArray(camp.sections)
+      ? camp.sections.map((s: Record<string, unknown>, j: number) => ({
+          section_number: j + 1, // Force sequential numbering
+          title: typeof s.title === "string" ? s.title : `Section ${j + 1}`,
+          section_type: VALID_SECTION_TYPES.includes(s.section_type as string)
+            ? s.section_type
+            : "concept",
+          modalities: Array.isArray(s.modalities)
+            ? s.modalities.filter((m: unknown) => VALID_MODALITIES.includes(m as string))
+            : ["fireside"],
+        }))
+      : [];
+
+    if (sections.length === 0) {
+      throw new ValidationError(`Camp "${campName}" has no sections`);
+    }
+
+    return {
+      camp_number: i, // Force sequential numbering starting from 0
+      camp_name: campName,
+      learning_objectives: objectives,
+      sections,
+      checkpoint: camp.checkpoint && typeof camp.checkpoint === "object" ? camp.checkpoint : null,
+    };
+  });
+
+  // Validate summit_challenge
+  const summit = data.summit_challenge as Record<string, unknown> | undefined;
+  const summitChallenge = {
+    description: summit && typeof summit.description === "string"
+      ? summit.description
+      : "Demonstrate mastery of the skill.",
+    rubric: summit && Array.isArray(summit.rubric)
+      ? summit.rubric.filter(
+          (r: unknown) =>
+            r && typeof r === "object" && typeof (r as Record<string, unknown>).dimension === "string"
+        )
+      : [],
+  };
+
+  return {
+    ...data,
+    trek_name: trekName,
+    difficulty,
+    estimated_duration: typeof data.estimated_duration === "string" ? data.estimated_duration : "2-4 weeks",
+    camps: validatedCamps,
+    summit_challenge: summitChallenge,
+    terrain_params: data.terrain_params && typeof data.terrain_params === "object" ? data.terrain_params : null,
+    tool_recommendations: Array.isArray(data.tool_recommendations) ? data.tool_recommendations : [],
+    skill_badge: data.skill_badge && typeof data.skill_badge === "object"
+      ? data.skill_badge
+      : { icon: "default", label: trekName, color: "#1A3D7C" },
+  };
+}
+
 serve(async (req: Request) => {
+  const cors = getCorsHeaders(req);
+
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response("ok", { headers: cors });
   }
 
   try {
-    const { skill_description, prerequisite_answers, user_id, user_context } =
-      await req.json();
-
-    if (!skill_description || !user_id) {
+    // Auth check - verify JWT user matches requested user_id
+    const authUserId = getUserIdFromRequest(req);
+    if (!authUserId) {
       return new Response(
-        JSON.stringify({ error: "skill_description and user_id are required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "Authentication required" }),
+        { status: 401, headers: { ...cors, "Content-Type": "application/json" } }
       );
     }
 
-    // Build context about prior treks for cross-trek intelligence
-    const priorTreksContext = user_context?.notebook_skills?.length
-      ? `\nThe climber has already summited these skills: ${user_context.notebook_skills.join(", ")}. Reference this prior knowledge where relevant and compress or skip camps that overlap.`
+    // Rate limit
+    if (!checkRateLimit(authUserId)) {
+      return new Response(
+        JSON.stringify({ error: "Too many requests. Please wait a moment." }),
+        { status: 429, headers: { ...cors, "Content-Type": "application/json" } }
+      );
+    }
+
+    const body = await req.json();
+    const skillDescription = validateSkillDescription(body.skill_description);
+    const prerequisiteAnswers = validatePrerequisiteAnswers(body.prerequisite_answers);
+
+    // Validate user_id matches authenticated user
+    const requestedUserId = body.user_id;
+    if (requestedUserId && requestedUserId !== authUserId) {
+      return new Response(
+        JSON.stringify({ error: "User ID mismatch" }),
+        { status: 403, headers: { ...cors, "Content-Type": "application/json" } }
+      );
+    }
+    const userId = authUserId;
+
+    // Build context about prior treks
+    const userContext = body.user_context;
+    const priorTreksContext = userContext?.notebook_skills?.length
+      ? `\nThe climber has already summited these skills: ${userContext.notebook_skills.join(", ")}. Reference this prior knowledge where relevant and compress or skip camps that overlap.`
       : "";
 
-    const prereqContext = prerequisite_answers?.length
-      ? `\nPrerequisite interview answers:\n${prerequisite_answers.map((a: { question: string; answer: string }) => `Q: ${a.question}\nA: ${a.answer}`).join("\n\n")}`
+    const prereqContext = prerequisiteAnswers?.length
+      ? `\nPrerequisite interview answers:\n${prerequisiteAnswers.map((a) => `Q: ${a.question}\nA: ${a.answer}`).join("\n\n")}`
       : "";
 
-    const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 4096,
-      system: SHERPA_SYSTEM_PROMPT,
-      messages: [
-        {
-          role: "user",
-          content: `A climber wants to learn: "${skill_description}"
+    const response = await callWithRetry(() =>
+      anthropic.messages.create({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 4096,
+        system: SHERPA_SYSTEM_PROMPT,
+        messages: [
+          {
+            role: "user",
+            content: `A climber wants to learn: "${skillDescription}"
 ${prereqContext}
 ${priorTreksContext}
 
@@ -100,23 +228,31 @@ Guidelines:
 - If the climber has prior experience (from prerequisite answers), compress early camps.
 
 Return ONLY the JSON object, no other text.`,
-        },
-      ],
-    });
+          },
+        ],
+      })
+    );
 
     const text =
       response.content[0].type === "text" ? response.content[0].text : "";
 
-    let trekData;
+    let rawTrekData;
     try {
-      const cleaned = text.replace(/```json?\s*/g, "").replace(/```\s*/g, "").trim();
-      trekData = JSON.parse(cleaned);
+      const cleaned = text
+        .replace(/```json?\s*/g, "")
+        .replace(/```\s*/g, "")
+        .trim();
+      rawTrekData = JSON.parse(cleaned);
     } catch {
+      console.error("Failed to parse trek generation response:", text.slice(0, 300));
       return new Response(
-        JSON.stringify({ error: "Failed to parse trek generation response", raw: text }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "Failed to generate trek. Please try again." }),
+        { status: 500, headers: { ...cors, "Content-Type": "application/json" } }
       );
     }
+
+    // Validate and sanitize AI response
+    const trekData = validateTrekData(rawTrekData);
 
     // Write the trek structure to the database using service role
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -125,8 +261,8 @@ Return ONLY the JSON object, no other text.`,
     const { data: trek, error: trekError } = await supabase
       .from("treks")
       .insert({
-        user_id,
-        skill_description,
+        user_id: userId,
+        skill_description: skillDescription,
         trek_name: trekData.trek_name,
         difficulty: trekData.difficulty,
         status: "proposed",
@@ -134,72 +270,86 @@ Return ONLY the JSON object, no other text.`,
         summit_challenge: trekData.summit_challenge,
         skill_badge: trekData.skill_badge,
         terrain_params: trekData.terrain_params,
-        prerequisite_answers: prerequisite_answers || null,
-        tool_recommendations: trekData.tool_recommendations || null,
-        total_camps: trekData.camps?.length || 0,
+        prerequisite_answers: prerequisiteAnswers,
+        tool_recommendations: trekData.tool_recommendations,
+        total_camps: (trekData.camps as unknown[]).length,
       })
       .select()
       .single();
 
     if (trekError) {
+      console.error("Failed to create trek:", trekError);
       return new Response(
-        JSON.stringify({ error: "Failed to create trek", detail: trekError.message }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "Failed to save trek. Please try again." }),
+        { status: 500, headers: { ...cors, "Content-Type": "application/json" } }
       );
     }
 
-    // Create camps and sections
-    for (const camp of trekData.camps || []) {
-      const { data: campRow, error: campError } = await supabase
-        .from("camps")
-        .insert({
-          trek_id: trek.id,
-          user_id,
-          camp_number: camp.camp_number,
-          camp_name: camp.camp_name,
-          learning_objectives: camp.learning_objectives,
-          checkpoint_definition: camp.checkpoint || null,
-          status: "locked",
-        })
-        .select()
-        .single();
+    // Create camps and sections - rollback trek on failure
+    const camps = trekData.camps as Array<Record<string, unknown>>;
+    try {
+      for (const camp of camps) {
+        const { data: campRow, error: campError } = await supabase
+          .from("camps")
+          .insert({
+            trek_id: trek.id,
+            user_id: userId,
+            camp_number: camp.camp_number,
+            camp_name: camp.camp_name,
+            learning_objectives: camp.learning_objectives,
+            checkpoint_definition: camp.checkpoint || null,
+            status: "locked",
+          })
+          .select()
+          .single();
 
-      if (campError) {
-        console.error("Failed to create camp:", campError);
-        continue;
-      }
+        if (campError) {
+          throw new Error(`Failed to create camp "${camp.camp_name}": ${campError.message}`);
+        }
 
-      // Create trail sections for this camp
-      const sections = (camp.sections || []).map(
-        (section: {
-          section_number: number;
-          title: string;
-          section_type: string;
-          modalities: string[];
-        }) => ({
-          camp_id: campRow.id,
-          trek_id: trek.id,
-          user_id,
-          section_number: section.section_number,
-          title: section.title,
-          section_type: section.section_type,
-          modalities: section.modalities,
-          status: "locked",
-        })
-      );
+        const sections = (camp.sections as Array<Record<string, unknown>>).map(
+          (section) => ({
+            camp_id: campRow.id,
+            trek_id: trek.id,
+            user_id: userId,
+            section_number: section.section_number,
+            title: section.title,
+            section_type: section.section_type,
+            modalities: section.modalities,
+            status: "locked",
+          })
+        );
 
-      if (sections.length > 0) {
-        const { error: sectionsError } = await supabase
-          .from("trail_sections")
-          .insert(sections);
+        if (sections.length > 0) {
+          const { error: sectionsError } = await supabase
+            .from("trail_sections")
+            .insert(sections);
 
-        if (sectionsError) {
-          console.error("Failed to create sections:", sectionsError);
+          if (sectionsError) {
+            throw new Error(`Failed to create sections for "${camp.camp_name}": ${sectionsError.message}`);
+          }
         }
       }
+    } catch (dbError) {
+      // Rollback: delete the trek (CASCADE will clean up camps and sections)
+      console.error("Rolling back trek creation:", dbError);
+      await supabase.from("treks").delete().eq("id", trek.id);
+      return new Response(
+        JSON.stringify({ error: "Failed to save trek structure. Please try again." }),
+        { status: 500, headers: { ...cors, "Content-Type": "application/json" } }
+      );
     }
 
-    // Return the trek data and the created trek ID
+    // Fire trek_started expedition event
+    await supabase.from("expedition_events").insert({
+      user_id: userId,
+      trek_id: trek.id,
+      event_type: "trek_started",
+      title: `New trek: ${trekData.trek_name}`,
+      body: `The Sherpa has mapped a ${trekData.difficulty} trek with ${camps.length} camps.`,
+      metadata: { difficulty: trekData.difficulty, camps: camps.length },
+    });
+
     return new Response(
       JSON.stringify({
         trek_id: trek.id,
@@ -212,12 +362,20 @@ Return ONLY the JSON object, no other text.`,
         skill_badge: trekData.skill_badge,
         camps: trekData.camps,
       }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { headers: { ...cors, "Content-Type": "application/json" } }
     );
   } catch (error) {
+    if (error instanceof ValidationError) {
+      return new Response(
+        JSON.stringify({ error: error.message }),
+        { status: 400, headers: { ...cors, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.error("trek-generate error:", error.message);
     return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ error: "Something went wrong. Please try again." }),
+      { status: 500, headers: { ...cors, "Content-Type": "application/json" } }
     );
   }
 });
