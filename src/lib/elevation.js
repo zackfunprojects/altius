@@ -41,7 +41,7 @@ export async function awardElevation({ userId, delta, sourceType, sourceId, trek
   const totalAfter = profile.current_elevation + delta
 
   // Insert elevation log entry
-  const { error: logError } = await supabase.from('elevation_log').insert({
+  const { error: insertError } = await supabase.from('elevation_log').insert({
     user_id: userId,
     delta,
     total_after: totalAfter,
@@ -50,7 +50,7 @@ export async function awardElevation({ userId, delta, sourceType, sourceId, trek
     trek_id: trekId || null,
   })
 
-  if (logError) throw logError
+  if (insertError) throw insertError
 
   // Update profile elevation and last_active
   const { error: updateError } = await supabase

@@ -1,6 +1,22 @@
 import { supabase } from './supabase'
 import { awardElevation, getElevationDelta } from './elevation'
 import { getExpeditionDay } from './expedition'
+import { logWarn } from './logger'
+
+const VALID_TRANSITIONS = {
+  proposed: ['active', 'abandoned'],
+  active: ['paused', 'completed', 'abandoned'],
+  paused: ['active', 'abandoned'],
+  completed: [],
+  abandoned: [],
+}
+
+function assertTransition(currentStatus, targetStatus) {
+  const allowed = VALID_TRANSITIONS[currentStatus]
+  if (!allowed || !allowed.includes(targetStatus)) {
+    throw new Error(`Cannot transition trek from '${currentStatus}' to '${targetStatus}'`)
+  }
+}
 
 /**
  * Creates a new trek with status 'proposed'.
@@ -12,10 +28,10 @@ export async function createTrek({ userId, skillDescription }) {
     .insert({
       user_id: userId,
       skill_description: skillDescription,
-      trek_name: 'Untitled Trek', // Placeholder until AI generates
-      difficulty: 'weekend_trek', // Placeholder until AI generates
+      trek_name: 'Untitled Trek',
+      difficulty: 'weekend_trek',
       status: 'proposed',
-      summit_challenge: {},       // Placeholder until AI generates
+      summit_challenge: {},
     })
     .select()
     .single()
@@ -26,8 +42,33 @@ export async function createTrek({ userId, skillDescription }) {
 
 /**
  * Activates a proposed trek - sets status to 'active', unlocks base camp.
+ * Enforces free tier limit of 1 active trek.
  */
 export async function activateTrek(trekId) {
+  // Fetch trek to validate status transition
+  const { data: trek, error: fetchError } = await supabase
+    .from('treks')
+    .select('status, user_id, trek_name, difficulty')
+    .eq('id', trekId)
+    .single()
+
+  if (fetchError) throw fetchError
+  assertTransition(trek.status, 'active')
+
+  // Check free tier limit
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('subscription_tier')
+    .eq('id', trek.user_id)
+    .single()
+
+  if (profile?.subscription_tier !== 'pro') {
+    const activeCount = await getActiveTrekCount(trek.user_id)
+    if (activeCount >= 1) {
+      throw new Error('Free tier is limited to 1 active trek. Complete or abandon your current trek first.')
+    }
+  }
+
   const { error: trekError } = await supabase
     .from('treks')
     .update({
@@ -56,18 +97,35 @@ export async function activateTrek(trekId) {
     .single()
 
   if (baseCamp) {
-    await supabase
+    const { error: sectionError } = await supabase
       .from('trail_sections')
       .update({ status: 'active' })
       .eq('camp_id', baseCamp.id)
       .eq('section_number', 1)
+
+    if (sectionError) throw sectionError
   }
+
+  // Fire expedition event
+  await fireLifecycleEvent(trek.user_id, trekId, 'trek_started',
+    `Trek activated: ${trek.trek_name}`,
+    `Beginning a ${trek.difficulty} trek.`
+  )
 }
 
 /**
  * Pauses an active trek.
  */
 export async function pauseTrek(trekId) {
+  const { data: trek, error: fetchError } = await supabase
+    .from('treks')
+    .select('status, user_id')
+    .eq('id', trekId)
+    .single()
+
+  if (fetchError) throw fetchError
+  assertTransition(trek.status, 'paused')
+
   const { error } = await supabase
     .from('treks')
     .update({ status: 'paused' })
@@ -80,6 +138,15 @@ export async function pauseTrek(trekId) {
  * Resumes a paused trek.
  */
 export async function resumeTrek(trekId) {
+  const { data: trek, error: fetchError } = await supabase
+    .from('treks')
+    .select('status, user_id')
+    .eq('id', trekId)
+    .single()
+
+  if (fetchError) throw fetchError
+  assertTransition(trek.status, 'active')
+
   const { error } = await supabase
     .from('treks')
     .update({ status: 'active' })
@@ -94,7 +161,6 @@ export async function resumeTrek(trekId) {
  * Idempotent - checks trek status before proceeding.
  */
 export async function completeTrek(trekId) {
-  // Fetch the trek
   const { data: trek, error: trekFetchError } = await supabase
     .from('treks')
     .select('*')
@@ -103,10 +169,10 @@ export async function completeTrek(trekId) {
 
   if (trekFetchError) throw trekFetchError
 
-  // Idempotency guard - don't complete an already-completed trek
+  // Idempotency guard
   if (trek.status === 'completed') return
+  assertTransition(trek.status, 'completed')
 
-  // Fetch the user profile for expedition day
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('created_at')
@@ -117,7 +183,6 @@ export async function completeTrek(trekId) {
 
   const expeditionDay = getExpeditionDay(profile.created_at)
 
-  // Extract key concepts from camps' learning_objectives
   const { data: camps } = await supabase
     .from('camps')
     .select('learning_objectives')
@@ -125,7 +190,7 @@ export async function completeTrek(trekId) {
     .order('camp_number')
 
   const keyConcepts = (camps || []).flatMap(
-    (c) => c.learning_objectives || []
+    (c) => Array.isArray(c.learning_objectives) ? c.learning_objectives : []
   )
 
   // Try atomic RPC first
@@ -141,10 +206,16 @@ export async function completeTrek(trekId) {
     p_difficulty: trek.difficulty,
   })
 
-  if (!rpcError) return
+  if (!rpcError) {
+    // Fire event after successful RPC
+    await fireLifecycleEvent(trek.user_id, trekId, 'summit_completed',
+      `Summit reached: ${trek.trek_name}`,
+      trek.summit_entry || 'The summit is yours.'
+    )
+    return
+  }
 
-  // Fallback: sequential writes (non-atomic but functional)
-  // Mark trek completed
+  // Fallback: sequential writes
   const { error: updateError } = await supabase
     .from('treks')
     .update({
@@ -152,11 +223,10 @@ export async function completeTrek(trekId) {
       completed_at: new Date().toISOString(),
     })
     .eq('id', trekId)
-    .eq('status', 'active') // Only complete if still active (idempotency)
+    .eq('status', 'active')
 
   if (updateError) throw updateError
 
-  // Create trek_notebook entry
   const { error: notebookError } = await supabase.from('trek_notebook').insert({
     user_id: trek.user_id,
     trek_id: trekId,
@@ -170,22 +240,20 @@ export async function completeTrek(trekId) {
 
   if (notebookError) throw notebookError
 
-  // Increment total_treks_completed atomically via SQL
-  const { error: profileUpdateError } = await supabase.rpc('increment_treks_completed', {
+  // Increment total_treks_completed via RPC (atomic)
+  const { error: incrError } = await supabase.rpc('increment_treks_completed', {
     p_user_id: trek.user_id,
   })
 
-  // Fallback if RPC doesn't exist
-  if (profileUpdateError) {
-    await supabase
-      .from('profiles')
-      .update({
-        total_treks_completed: supabase.sql`total_treks_completed + 1`,
-      })
-      .eq('id', trek.user_id)
+  if (incrError) {
+    // Log but don't fallback - a timeout doesn't mean the RPC didn't commit,
+    // and a read+write fallback risks double-incrementing.
+    logWarn('trek-complete', 'Failed to increment treks_completed via RPC', {
+      userId: trek.user_id,
+      error: incrError.message,
+    })
   }
 
-  // Award summit elevation
   const delta = getElevationDelta('summit_completed', { difficulty: trek.difficulty })
   await awardElevation({
     userId: trek.user_id,
@@ -194,12 +262,26 @@ export async function completeTrek(trekId) {
     sourceId: trekId,
     trekId,
   })
+
+  await fireLifecycleEvent(trek.user_id, trekId, 'summit_completed',
+    `Summit reached: ${trek.trek_name}`,
+    trek.summit_entry || 'The summit is yours.'
+  )
 }
 
 /**
  * Abandons a trek. No penalty.
  */
 export async function abandonTrek(trekId) {
+  const { data: trek, error: fetchError } = await supabase
+    .from('treks')
+    .select('status, user_id')
+    .eq('id', trekId)
+    .single()
+
+  if (fetchError) throw fetchError
+  assertTransition(trek.status, 'abandoned')
+
   const { error } = await supabase
     .from('treks')
     .update({ status: 'abandoned' })
@@ -237,11 +319,8 @@ export async function unlockNextCamp(trekId, currentCampNumber) {
     .maybeSingle()
 
   if (fetchError) throw fetchError
-
-  // No next camp - this was the last camp before summit
   if (!nextCamp) return null
 
-  // Unlock the camp
   const { error: updateError } = await supabase
     .from('camps')
     .update({ status: 'active' })
@@ -249,7 +328,6 @@ export async function unlockNextCamp(trekId, currentCampNumber) {
 
   if (updateError) throw updateError
 
-  // Unlock first section of the new camp
   const { error: sectionError } = await supabase
     .from('trail_sections')
     .update({ status: 'active' })
@@ -266,7 +344,6 @@ export async function unlockNextCamp(trekId, currentCampNumber) {
  * Idempotent - skips if section is already completed.
  */
 export async function completeSection(sectionId) {
-  // Fetch section details
   const { data: section, error: sectionError } = await supabase
     .from('trail_sections')
     .select('id, camp_id, trek_id, user_id, section_number, status')
@@ -274,23 +351,21 @@ export async function completeSection(sectionId) {
     .single()
 
   if (sectionError) throw sectionError
-
-  // Idempotency guard - don't re-complete an already completed section
   if (section.status === 'completed') return
 
-  // Mark section complete
-  const { error: updateError } = await supabase
+  const { data: updated, error: updateError } = await supabase
     .from('trail_sections')
     .update({
       status: 'completed',
       completed_at: new Date().toISOString(),
     })
     .eq('id', sectionId)
-    .neq('status', 'completed') // Only update if not already completed
+    .neq('status', 'completed')
+    .select('id')
 
   if (updateError) throw updateError
+  if (!updated || updated.length === 0) return // Already completed by concurrent call
 
-  // Award lesson_completed elevation
   await awardElevation({
     userId: section.user_id,
     delta: getElevationDelta('lesson_completed'),
@@ -312,10 +387,9 @@ export async function completeSection(sectionId) {
       .from('trail_sections')
       .update({ status: 'active' })
       .eq('id', nextSection.id)
-      .eq('status', 'locked') // Only unlock if still locked
+      .eq('status', 'locked')
   }
 
-  // Check if camp is now complete
   await checkCampComplete(section.camp_id)
 }
 
@@ -325,7 +399,6 @@ export async function completeSection(sectionId) {
  * Idempotent - checks camp status before proceeding.
  */
 export async function checkCampComplete(campId) {
-  // Fetch camp to check current status
   const { data: camp, error: campFetchError } = await supabase
     .from('camps')
     .select('id, trek_id, user_id, camp_number, status')
@@ -333,11 +406,8 @@ export async function checkCampComplete(campId) {
     .single()
 
   if (campFetchError) throw campFetchError
-
-  // Idempotency guard - don't re-complete an already completed camp
   if (camp.status === 'completed') return false
 
-  // Count total sections and completed sections
   const { count: totalSections } = await supabase
     .from('trail_sections')
     .select('id', { count: 'exact', head: true })
@@ -351,7 +421,6 @@ export async function checkCampComplete(campId) {
 
   if (completedSections < totalSections) return false
 
-  // All sections complete - mark camp complete (only if still active)
   const { data: updated, error: updateError } = await supabase
     .from('camps')
     .update({
@@ -359,21 +428,24 @@ export async function checkCampComplete(campId) {
       completed_at: new Date().toISOString(),
     })
     .eq('id', campId)
-    .neq('status', 'completed') // Idempotency: only update if not already completed
+    .neq('status', 'completed')
     .select('id')
 
   if (updateError) throw updateError
-
-  // If no rows updated, camp was already completed by a concurrent call
   if (!updated || updated.length === 0) return false
 
-  // Update trek completed_camps count atomically
-  await supabase
-    .from('treks')
-    .update({ completed_camps: supabase.sql`completed_camps + 1` })
-    .eq('id', camp.trek_id)
+  // Increment completed_camps via RPC
+  const { error: incrError } = await supabase.rpc('increment_completed_camps', {
+    p_trek_id: camp.trek_id,
+  })
 
-  // Award camp_reached elevation
+  if (incrError) {
+    logWarn('camp-complete', 'Failed to increment completed_camps via RPC', {
+      trekId: camp.trek_id,
+      error: incrError.message,
+    })
+  }
+
   await awardElevation({
     userId: camp.user_id,
     delta: getElevationDelta('camp_reached'),
@@ -382,8 +454,28 @@ export async function checkCampComplete(campId) {
     trekId: camp.trek_id,
   })
 
-  // Unlock next camp
+  // Fire camp_reached event
+  await fireLifecycleEvent(camp.user_id, camp.trek_id, 'camp_reached',
+    `Camp reached`,
+    `Camp ${camp.camp_number} complete.`
+  )
+
   await unlockNextCamp(camp.trek_id, camp.camp_number)
 
   return true
+}
+
+/**
+ * Fires an expedition event for trek lifecycle changes.
+ */
+async function fireLifecycleEvent(userId, trekId, eventType, title, body) {
+  await supabase.from('expedition_events').insert({
+    user_id: userId,
+    trek_id: trekId,
+    event_type: eventType,
+    title,
+    body,
+  }).then(({ error }) => {
+    if (error) logWarn('expedition-event', 'Failed to fire event', { eventType, error: error.message })
+  })
 }
