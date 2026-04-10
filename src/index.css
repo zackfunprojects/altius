@@ -154,3 +154,9 @@ h1, h2, h3, h4, h5, h6 {
 .camp-active-pulse {
   animation: camp-pulse 2s ease-in-out infinite;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .camp-active-pulse {
+    animation: none;
+  }
+}

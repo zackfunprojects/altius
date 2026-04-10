@@ -162,6 +162,7 @@ export function generateSnowCapPath(peakStyle, width = DEFAULT_WIDTH) {
   const steps = 200
   const snowPoints = []
   let inSnow = false
+  let sectionStartX = null
 
   for (let i = 0; i <= steps; i++) {
     const x = (i / steps) * width
@@ -180,14 +181,23 @@ export function generateSnowCapPath(peakStyle, width = DEFAULT_WIDTH) {
       if (!inSnow) {
         snowPoints.push(`M ${x} ${y}`)
         inSnow = true
+        sectionStartX = x
       } else {
         snowPoints.push(`L ${x} ${y}`)
       }
     } else if (inSnow) {
-      // Close this snow section
+      // Close this snow section as a filled polygon
       snowPoints.push(`L ${x} ${threshold}`)
+      snowPoints.push(`L ${sectionStartX} ${threshold} Z`)
       inSnow = false
+      sectionStartX = null
     }
+  }
+
+  // Close any trailing open snow segment
+  if (inSnow && sectionStartX !== null) {
+    snowPoints.push(`L ${width} ${threshold}`)
+    snowPoints.push(`L ${sectionStartX} ${threshold} Z`)
   }
 
   return snowPoints.length > 2 ? snowPoints.join(' ') : null

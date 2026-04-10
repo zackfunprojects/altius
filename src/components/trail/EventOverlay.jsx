@@ -12,7 +12,7 @@ export default function EventOverlay({ event, onDismiss }) {
     if (!event) return
 
     function handleKey(e) {
-      if (e.key === ' ' || e.key === 'Enter') {
+      if (e.key === ' ' || e.key === 'Enter' || e.key === 'Escape') {
         e.preventDefault()
         onDismiss()
       }
@@ -41,6 +41,9 @@ export default function EventOverlay({ event, onDismiss }) {
           {/* Dialog */}
           <Motion.div
             className="trail-dialog relative px-8 py-6 max-w-md w-full"
+            role="dialog"
+            aria-modal="true"
+            aria-label={event.title || 'Expedition event'}
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}

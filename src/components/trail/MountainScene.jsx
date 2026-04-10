@@ -49,7 +49,7 @@ const MountainScene = memo(function MountainScene({
     generateMountainPath(peakStyle, 2, WIDTH, HEIGHT),
   ], [peakStyle])
 
-  const snowPath = useMemo(() => generateSnowCapPath(peakStyle, WIDTH, HEIGHT), [peakStyle])
+  const snowPath = useMemo(() => generateSnowCapPath(peakStyle, WIDTH), [peakStyle])
 
   const campPositions = useMemo(
     () => computeCampPositions(camps.length, trailStyle, WIDTH, HEIGHT),
@@ -124,7 +124,7 @@ const MountainScene = memo(function MountainScene({
           if (!camp) return null
 
           const isCompleted = camp.status === 'completed'
-          const isActive = camp.status === 'active'
+          const isActive = i === currentCampIndex
 
           return (
             <g key={camp.id || i}>

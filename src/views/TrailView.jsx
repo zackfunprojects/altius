@@ -76,9 +76,9 @@ export default function TrailView() {
 
   // Event queue - undismissed events
   const pendingEvent = useMemo(() => {
-    if (!events?.length) return null
+    if (!trek?.id || !events?.length) return null
     return events.find(e => !dismissedIds.has(e.id)) || null
-  }, [events, dismissedIds])
+  }, [trek?.id, events, dismissedIds])
 
   const dismissEvent = useCallback(() => {
     if (!pendingEvent || !user?.id) return
