@@ -3,11 +3,21 @@ import { useState } from 'react'
 export default function ReflectionBlock({ prompt, onReflectionSubmit }) {
   const [text, setText] = useState('')
   const [submitted, setSubmitted] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState(null)
 
-  const handleSubmit = () => {
-    if (!text.trim()) return
-    setSubmitted(true)
-    if (onReflectionSubmit) onReflectionSubmit(text.trim())
+  const handleSubmit = async () => {
+    if (!text.trim() || saving) return
+    setSaving(true)
+    setSaveError(null)
+    try {
+      if (onReflectionSubmit) await onReflectionSubmit(text.trim())
+      setSubmitted(true)
+    } catch {
+      setSaveError('Failed to save reflection. Try again.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -29,12 +39,15 @@ export default function ReflectionBlock({ prompt, onReflectionSubmit }) {
             placeholder="Take a moment to think..."
             className="w-full h-24 px-3 py-2 font-body text-sm text-ink bg-white border border-trail-brown/15 rounded-md resize-none focus:outline-none focus:ring-1 focus:ring-summit-cobalt/40"
           />
+          {saveError && (
+            <p className="text-xs font-ui text-signal-orange mt-1">{saveError}</p>
+          )}
           <button
             onClick={handleSubmit}
-            disabled={!text.trim()}
+            disabled={!text.trim() || saving}
             className="mt-2 px-3 py-1.5 text-xs font-ui font-medium bg-summit-cobalt text-white rounded-md hover:bg-summit-cobalt/90 transition-colors disabled:opacity-50"
           >
-            Save Reflection
+            {saving ? 'Saving...' : 'Save Reflection'}
           </button>
         </>
       )}

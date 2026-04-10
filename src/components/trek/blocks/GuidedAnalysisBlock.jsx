@@ -19,6 +19,8 @@ export default function GuidedAnalysisBlock({ spec }) {
           >
             <button
               onClick={() => setExpandedExample(expandedExample === i ? -1 : i)}
+              aria-expanded={expandedExample === i}
+              aria-controls={`guided-example-${i}`}
               className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-catalog-cream/50 transition-colors"
             >
               <span className="font-ui font-medium text-sm text-ink">
@@ -35,7 +37,7 @@ export default function GuidedAnalysisBlock({ spec }) {
               </svg>
             </button>
             {expandedExample === i && (
-              <div className="px-4 pb-4 space-y-3">
+              <div id={`guided-example-${i}`} className="px-4 pb-4 space-y-3">
                 {example.description && (
                   <p className="font-body text-sm text-trail-brown">
                     {example.description}

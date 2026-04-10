@@ -11,10 +11,11 @@ export default function ExerciseBlock({ spec, onExerciseComplete }) {
   const isMultipleChoice = spec.exercise_type === 'multiple_choice'
   const isShortAnswer = spec.exercise_type === 'short_answer'
   const isWritingPrompt = spec.exercise_type === 'writing_prompt'
+  const options = Array.isArray(spec.options) ? spec.options : []
 
   const handleSubmit = () => {
     if (isMultipleChoice && selectedOption !== null) {
-      const isCorrect = spec.options?.[selectedOption] === spec.correct_answer
+      const isCorrect = options[selectedOption] === spec.correct_answer
       setCorrect(isCorrect)
       setSubmitted(true)
       if (isCorrect && onExerciseComplete) onExerciseComplete()
@@ -42,15 +43,15 @@ export default function ExerciseBlock({ spec, onExerciseComplete }) {
 
       <p className="font-body text-ink mb-4">{spec.prompt}</p>
 
-      {isMultipleChoice && spec.options && (
+      {isMultipleChoice && options.length > 0 && (
         <div className="space-y-2 mb-4">
-          {spec.options.map((option, i) => (
+          {options.map((option, i) => (
             <button
               key={i}
               onClick={() => !submitted && setSelectedOption(i)}
               disabled={submitted}
               className={`w-full text-left px-4 py-2.5 rounded-md border text-sm font-ui transition-colors ${
-                submitted && spec.options[i] === spec.correct_answer
+                submitted && options[i] === spec.correct_answer
                   ? 'bg-phosphor-green/10 border-phosphor-green text-ink'
                   : submitted && selectedOption === i && !correct
                     ? 'bg-signal-orange/10 border-signal-orange text-ink'

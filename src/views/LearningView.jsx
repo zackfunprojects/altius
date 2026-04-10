@@ -5,9 +5,7 @@ import { useActiveTrek } from '../hooks/useActiveTrek'
 import { useTrekJournal } from '../hooks/useTrekJournal'
 import { completeSection } from '../lib/trek'
 import { generateLesson } from '../lib/sherpa'
-import { supabase } from '../lib/supabase'
 import FourColorBar from '../components/brand/FourColorBar'
-import WordMark from '../components/brand/WordMark'
 import ElevationCounter from '../components/brand/ElevationCounter'
 import DifficultyBadge from '../components/brand/DifficultyBadge'
 import SherpaTerminal from '../components/brand/SherpaTerminal'
@@ -20,6 +18,9 @@ export default function LearningView() {
   const { profile } = useProfile()
   const { trek, camps, currentSection, loading: trekLoading, refetch: refetchTrek } = useActiveTrek()
 
+  // displayedSection tracks what the user is viewing (may differ from currentSection during review)
+  const [displayedSection, setDisplayedSection] = useState(null)
+  const [isReviewing, setIsReviewing] = useState(false)
   const [activeCamp, setActiveCamp] = useState(null)
   const [lessonContent, setLessonContent] = useState(null)
   const [generating, setGenerating] = useState(false)
@@ -31,47 +32,46 @@ export default function LearningView() {
 
   const { addNote } = useTrekJournal(trek?.id)
 
-  // Find the active camp from the current section
+  // Sync displayedSection with currentSection when not reviewing
   useEffect(() => {
-    if (camps.length && currentSection) {
-      const camp = camps.find(c => c.id === currentSection.camp_id)
+    if (!isReviewing && currentSection) {
+      setDisplayedSection(currentSection)
+    }
+  }, [currentSection, isReviewing])
+
+  // Find the active camp from the displayed section
+  useEffect(() => {
+    if (camps.length && displayedSection) {
+      const camp = camps.find(c => c.id === displayedSection.camp_id)
       setActiveCamp(camp || null)
     }
-  }, [camps, currentSection])
+  }, [camps, displayedSection])
 
-  // Load lesson content when section changes
+  // Load lesson content when displayed section changes
   useEffect(() => {
-    if (!currentSection) {
+    if (!displayedSection) {
       setLessonContent(null)
       return
     }
 
-    if (currentSection.content) {
-      setLessonContent(currentSection.content)
+    if (displayedSection.content) {
+      setLessonContent(displayedSection.content)
       return
     }
 
-    // Content is null - generate on demand
+    // Content is null - generate on demand (only for active sections, not review)
+    if (isReviewing) return
+
     let cancelled = false
     async function generate() {
       setGenerating(true)
       setGenError(null)
       try {
         const content = await generateLesson({
-          sectionId: currentSection.id,
-          sectionTitle: currentSection.title,
-          sectionType: currentSection.section_type,
-          modalities: currentSection.modalities,
-          campId: currentSection.camp_id,
-          trekId: currentSection.trek_id,
+          sectionId: displayedSection.id,
         })
         if (!cancelled) {
           setLessonContent(content)
-          // Save to database for re-access
-          await supabase
-            .from('trail_sections')
-            .update({ content })
-            .eq('id', currentSection.id)
         }
       } catch (err) {
         if (!cancelled) setGenError(err.message)
@@ -82,13 +82,13 @@ export default function LearningView() {
     generate()
     return () => { cancelled = true }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentSection?.id])
+  }, [displayedSection?.id, isReviewing])
 
   const handleCompleteSection = useCallback(async () => {
-    if (!currentSection || completing) return
+    if (!displayedSection || completing || isReviewing) return
     setCompleting(true)
     try {
-      await completeSection(currentSection.id)
+      await completeSection(displayedSection.id)
       setLessonContent(null)
       await refetchTrek()
     } catch (err) {
@@ -96,14 +96,14 @@ export default function LearningView() {
     } finally {
       setCompleting(false)
     }
-  }, [currentSection, completing, refetchTrek])
+  }, [displayedSection, completing, isReviewing, refetchTrek])
 
   const handleJournalSubmit = useCallback(async () => {
     if (!journalText.trim() || !trek) return
     try {
       await addNote({
         body: journalText.trim(),
-        sectionId: currentSection?.id,
+        sectionId: displayedSection?.id,
         campId: activeCamp?.id,
       })
       setJournalText('')
@@ -111,16 +111,39 @@ export default function LearningView() {
     } catch (err) {
       console.error('Failed to save journal note:', err)
     }
-  }, [journalText, trek, currentSection, activeCamp, addNote])
+  }, [journalText, trek, displayedSection, activeCamp, addNote])
 
   // Navigate to section on Trail Map click
-  const handleSectionClick = useCallback(async (section) => {
+  const handleSectionClick = useCallback((section) => {
     if (section.status === 'locked') return
-    if (section.id === currentSection?.id) return
 
-    // For completed sections, load their content for review
-    if (section.content) {
+    if (section.id === currentSection?.id) {
+      // Clicking the active section returns from review mode
+      setIsReviewing(false)
+      setDisplayedSection(currentSection)
+      if (currentSection.content) {
+        setLessonContent(currentSection.content)
+      } else {
+        setLessonContent(null)
+      }
+      return
+    }
+
+    // Viewing a completed section in review mode
+    if (section.status === 'completed' && section.content) {
+      setIsReviewing(true)
+      setDisplayedSection(section)
       setLessonContent(section.content)
+    }
+  }, [currentSection])
+
+  const handleBackToActive = useCallback(() => {
+    setIsReviewing(false)
+    setDisplayedSection(currentSection)
+    if (currentSection?.content) {
+      setLessonContent(currentSection.content)
+    } else {
+      setLessonContent(null)
     }
   }, [currentSection])
 
@@ -170,6 +193,21 @@ export default function LearningView() {
         </div>
       </header>
 
+      {/* Review mode banner */}
+      {isReviewing && (
+        <div className="bg-alpine-gold/10 border-b border-alpine-gold/20 px-4 sm:px-8 py-2 flex items-center justify-between">
+          <p className="text-xs font-ui font-medium text-alpine-gold">
+            Reviewing: {displayedSection?.title}
+          </p>
+          <button
+            onClick={handleBackToActive}
+            className="text-xs font-ui font-medium text-summit-cobalt hover:text-summit-cobalt/80 transition-colors"
+          >
+            Back to current section
+          </button>
+        </div>
+      )}
+
       {/* Main content - two panel layout */}
       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
         {/* Trail Map panel */}
@@ -200,7 +238,6 @@ export default function LearningView() {
                   onClick={() => {
                     setGenError(null)
                     setLessonContent(null)
-                    // Re-trigger generation by resetting
                     refetchTrek()
                   }}
                   className="px-4 py-2 bg-signal-orange text-white font-ui font-medium rounded-md text-sm hover:bg-signal-orange/90 transition-colors"
@@ -212,12 +249,12 @@ export default function LearningView() {
               <div className="max-w-2xl mx-auto">
                 <LessonRenderer
                   content={lessonContent}
-                  section={currentSection}
-                  onComplete={handleCompleteSection}
+                  section={displayedSection}
+                  onComplete={isReviewing ? null : handleCompleteSection}
                   completing={completing}
                 />
               </div>
-            ) : currentSection ? (
+            ) : displayedSection ? (
               <div className="max-w-2xl mx-auto">
                 <SherpaTerminal>
                   {'>'} Preparing your trail...
@@ -249,7 +286,7 @@ export default function LearningView() {
                 Journal
               </button>
             </div>
-            {currentSection && lessonContent && (
+            {!isReviewing && displayedSection && lessonContent && (
               <button
                 onClick={handleCompleteSection}
                 disabled={completing}
@@ -299,7 +336,7 @@ export default function LearningView() {
       <SherpaAside
         open={sherpaOpen}
         onClose={() => setSherpaOpen(false)}
-        section={currentSection}
+        section={displayedSection}
         trekId={trek?.id}
       />
     </div>

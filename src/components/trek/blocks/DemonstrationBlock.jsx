@@ -1,8 +1,15 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 export default function DemonstrationBlock({ spec }) {
   const [currentStep, setCurrentStep] = useState(0)
   const steps = spec?.steps || []
+
+  // Clamp currentStep if steps array changes
+  useEffect(() => {
+    if (steps.length > 0 && currentStep >= steps.length) {
+      setCurrentStep(steps.length - 1)
+    }
+  }, [steps.length, currentStep])
 
   if (!steps.length) return null
 

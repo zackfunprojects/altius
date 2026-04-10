@@ -124,18 +124,21 @@ export default function TrailMap({ camps, currentSectionId, onSectionClick }) {
   const scrollRef = useRef(null)
   const activeRef = useRef(null)
 
-  // Auto-scroll to current section
+  // Auto-scroll to current section (with delay to allow sections to render)
   useEffect(() => {
-    if (activeRef.current && scrollRef.current) {
-      const container = scrollRef.current
-      const element = activeRef.current
-      const containerRect = container.getBoundingClientRect()
-      const elementRect = element.getBoundingClientRect()
+    const timer = setTimeout(() => {
+      if (activeRef.current && scrollRef.current) {
+        const container = scrollRef.current
+        const element = activeRef.current
+        const containerRect = container.getBoundingClientRect()
+        const elementRect = element.getBoundingClientRect()
 
-      if (elementRect.top < containerRect.top || elementRect.bottom > containerRect.bottom) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        if (elementRect.top < containerRect.top || elementRect.bottom > containerRect.bottom) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
       }
-    }
+    }, 100)
+    return () => clearTimeout(timer)
   }, [currentSectionId])
 
   return (

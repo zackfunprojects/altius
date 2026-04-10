@@ -254,11 +254,29 @@ Return ONLY the JSON object, no other text.`,
       content = { narrative: [{ type: "sherpa_text", content: text }], estimated_minutes: 10 };
     }
 
-    // Save content to the section
-    await supabase
+    // Save content to the section (conditional: only if still null to avoid race)
+    const { data: updated } = await supabase
       .from("trail_sections")
       .update({ content })
-      .eq("id", section_id);
+      .eq("id", section_id)
+      .is("content", null)
+      .select("content")
+      .maybeSingle();
+
+    // If another request already wrote content, return the existing content
+    if (!updated) {
+      const { data: existing } = await supabase
+        .from("trail_sections")
+        .select("content")
+        .eq("id", section_id)
+        .single();
+      if (existing?.content) {
+        return new Response(
+          JSON.stringify(existing.content),
+          { headers: { ...cors, "Content-Type": "application/json" } }
+        );
+      }
+    }
 
     return new Response(
       JSON.stringify(content),

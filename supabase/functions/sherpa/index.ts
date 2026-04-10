@@ -60,11 +60,11 @@ serve(async (req: Request) => {
     if (section_id) {
       const { data: section } = await supabase
         .from("trail_sections")
-        .select("title, section_type, modalities, content")
+        .select("title, section_type, modalities, content, user_id")
         .eq("id", section_id)
         .single();
 
-      if (section) {
+      if (section && section.user_id === authUserId) {
         sectionContext = `\nCurrent section: "${section.title}" (${section.section_type})`;
         if (section.content?.narrative) {
           // Include a summary of the lesson content, not the full thing
@@ -82,11 +82,11 @@ serve(async (req: Request) => {
     if (trek_id) {
       const { data: trek } = await supabase
         .from("treks")
-        .select("trek_name, skill_description, difficulty")
+        .select("trek_name, skill_description, difficulty, user_id")
         .eq("id", trek_id)
         .single();
 
-      if (trek) {
+      if (trek && trek.user_id === authUserId) {
         trekContext = `\nTrek: "${trek.trek_name}" - learning ${trek.skill_description} (${trek.difficulty})`;
       }
     }
