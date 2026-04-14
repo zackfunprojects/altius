@@ -29,17 +29,12 @@ export default function ExerciseBlock({ spec, onExerciseComplete }) {
   }
 
   return (
-    <div className="bg-white rounded-lg border-2 border-signal-orange/20 p-5">
-      <div className="flex items-center gap-2 mb-3">
-        <div className="w-5 h-5 rounded-full bg-signal-orange/15 flex items-center justify-center">
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-            <path d="M6 2V6L8.5 7.5" stroke="#D9511C" strokeWidth="1.2" strokeLinecap="round"/>
-          </svg>
-        </div>
-        <span className="text-xs font-ui font-medium text-signal-orange uppercase tracking-wider">
-          Practice
-        </span>
-      </div>
+    <div className="bg-cream-light rounded-lg border border-trail-brown/15 overflow-hidden">
+      <div className="flex h-[3px]"><div className="flex-1 bg-summit-cobalt" /><div className="flex-1 bg-fitz-violet" /><div className="flex-1 bg-signal-orange" /><div className="flex-1 bg-alpine-gold" /></div>
+      <div className="p-5">
+      <p className="font-ui font-medium text-[9px] uppercase tracking-[0.12em] text-summit-cobalt mb-3">
+        Practice Ledge
+      </p>
 
       <p className="font-body text-ink mb-4">{spec.prompt}</p>
 
@@ -110,11 +105,12 @@ export default function ExerciseBlock({ spec, onExerciseComplete }) {
         <button
           onClick={handleSubmit}
           disabled={isMultipleChoice ? selectedOption === null : !answer.trim()}
-          className="px-4 py-2 bg-signal-orange text-white font-ui font-medium rounded-md text-sm hover:bg-signal-orange/90 transition-colors disabled:opacity-50"
+          className="px-5 py-2.5 bg-signal-orange text-catalog-cream font-ui font-semibold rounded-lg text-sm hover:bg-signal-orange/90 transition-colors disabled:opacity-50"
         >
-          Submit
+          Submit (+15 ft)
         </button>
       )}
+      </div>
     </div>
   )
 }

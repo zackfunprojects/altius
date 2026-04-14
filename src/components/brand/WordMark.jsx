@@ -4,9 +4,11 @@ const sizes = {
   lg: 'text-4xl tracking-[0.2em]',
 }
 
-export default function WordMark({ size = 'md' }) {
+export default function WordMark({ size = 'md', color = 'ink' }) {
+  const colorClass = color === 'cream' ? 'text-catalog-cream' : 'text-ink'
+
   return (
-    <span className={`font-display text-ink ${sizes[size]}`}>
+    <span className={`font-display ${colorClass} ${sizes[size] || sizes.md}`}>
       ALTIUS
     </span>
   )

@@ -9,8 +9,6 @@ import { generateLesson } from '../lib/sherpa'
 import { awardElevation, getElevationDelta } from '../lib/elevation'
 import CoachingPanel from '../components/trek/CoachingPanel'
 import FiresideMode from '../components/trek/FiresideMode'
-import FourColorBar from '../components/brand/FourColorBar'
-import ElevationCounter from '../components/brand/ElevationCounter'
 import DifficultyBadge from '../components/brand/DifficultyBadge'
 import SherpaTerminal from '../components/brand/SherpaTerminal'
 import TrailMap from '../components/trek/TrailMap'
@@ -38,9 +36,6 @@ export default function LearningView() {
   const [journalError, setJournalError] = useState(null)
   const [completing, setCompleting] = useState(false)
   const [completedExercises, setCompletedExercises] = useState(new Set())
-  const [showLearningGuide, setShowLearningGuide] = useState(() => {
-    return !localStorage.getItem('altius_learning_guide_dismissed')
-  })
 
   const { addNote } = useTrekJournal(trek?.id)
   const { responses: exerciseResponses, refetch: refetchExercises } = useExerciseResponses(displayedSection?.id)
@@ -156,7 +151,6 @@ export default function LearningView() {
       setJournalText('')
       setJournalOpen(false)
     } catch {
-      // Keep journal text so user doesn't lose their note
       setJournalError('Failed to save note. Please try again.')
     }
   }, [journalText, trek, displayedSection, activeCamp, addNote])
@@ -166,7 +160,6 @@ export default function LearningView() {
     if (section.status === 'locked') return
 
     if (section.id === currentSection?.id) {
-      // Clicking the active section returns from review mode
       setIsReviewing(false)
       setDisplayedSection(currentSection)
       if (currentSection.content) {
@@ -177,7 +170,6 @@ export default function LearningView() {
       return
     }
 
-    // Viewing a completed section in review mode
     if (section.status === 'completed' && section.content) {
       setIsReviewing(true)
       setDisplayedSection(section)
@@ -197,8 +189,8 @@ export default function LearningView() {
 
   if (trekLoading) {
     return (
-      <div className="min-h-screen bg-catalog-cream flex items-center justify-center">
-        <p className="font-mono text-trail-brown text-sm">Loading your trek...</p>
+      <div className="flex-1 flex items-center justify-center">
+        <p className="font-mono text-trail-brown text-sm italic">Loading your trek...</p>
       </div>
     )
   }
@@ -209,38 +201,18 @@ export default function LearningView() {
   }
 
   return (
-    <div className="min-h-screen bg-catalog-cream flex flex-col">
+    <>
       <PageTitle title="Learning" />
-      <FourColorBar />
 
-      {/* Top bar */}
-      <header className="px-4 sm:px-6 py-3 flex items-center justify-between border-b border-trail-brown/20 bg-white/50">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => navigate('/')}
-            className="text-trail-brown hover:text-ink transition-colors"
-            aria-label="Back to dashboard"
-          >
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <path d="M12.5 15L7.5 10L12.5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
-          <div>
-            <h1 className="font-display text-lg sm:text-xl text-ink leading-tight">
-              {trek.trek_name}
-            </h1>
-            {activeCamp && (
-              <p className="text-xs font-ui text-trail-brown mt-0.5">
-                {activeCamp.camp_name}
-              </p>
-            )}
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <DifficultyBadge difficulty={trek.difficulty} />
-          <ElevationCounter elevation={profile?.current_elevation || 0} />
-        </div>
-      </header>
+      {/* Breadcrumb bar */}
+      <div className="px-4 sm:px-6 lg:px-12 py-3 border-b border-trail-brown/15">
+        <p className="font-ui text-xs text-trail-brown">
+          {activeCamp?.camp_name || 'Base Camp'}
+          {displayedSection && (
+            <> &rsaquo; {displayedSection.title}</>
+          )}
+        </p>
+      </div>
 
       {/* Review mode banner */}
       {isReviewing && (
@@ -260,7 +232,7 @@ export default function LearningView() {
       {/* Main content - two panel layout */}
       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
         {/* Trail Map panel */}
-        <aside className="lg:w-72 xl:w-80 border-b lg:border-b-0 lg:border-r border-trail-brown/15 bg-white/30 overflow-y-auto">
+        <aside className="lg:w-72 xl:w-80 border-b lg:border-b-0 lg:border-r border-trail-brown/15 bg-cream-light/50 overflow-y-auto">
           <TrailMap
             camps={camps}
             currentSectionId={currentSection?.id}
@@ -271,29 +243,14 @@ export default function LearningView() {
         {/* Lesson panel */}
         <main className="flex-1 flex flex-col overflow-hidden">
           <div className="flex-1 overflow-y-auto px-4 sm:px-8 lg:px-12 py-6 sm:py-8">
-            {/* First-time orientation */}
-            {showLearningGuide && (
-              <div className="max-w-2xl mx-auto mb-6 p-4 bg-summit-cobalt/10 border border-summit-cobalt/20 rounded-lg relative">
-                <button
-                  onClick={() => { setShowLearningGuide(false); localStorage.setItem('altius_learning_guide_dismissed', 'true') }}
-                  className="absolute top-2 right-2 text-trail-brown/40 hover:text-ink text-xs"
-                >
-                  Dismiss
-                </button>
-                <p className="text-sm font-ui text-ink font-medium mb-1">How learning works</p>
-                <p className="text-xs font-body text-trail-brown/70 leading-relaxed pr-8">
-                  Read the lesson, complete any exercises, then click "Continue to Next Section" to advance. The trail map on the left tracks your progress through camps and sections.
-                </p>
-              </div>
-            )}
             {generating ? (
-              <div className="max-w-2xl mx-auto">
+              <div className="max-w-[640px] mx-auto">
                 <SherpaTerminal>
-                  {'>'} The Sherpa is preparing the next stretch of trail...
+                  The Sherpa is preparing the next stretch of trail...
                 </SherpaTerminal>
               </div>
             ) : genError ? (
-              <div className="max-w-2xl mx-auto space-y-4">
+              <div className="max-w-[640px] mx-auto space-y-4">
                 <p className="font-body text-signal-orange">
                   Failed to generate lesson content.
                 </p>
@@ -304,13 +261,13 @@ export default function LearningView() {
                     setLessonContent(null)
                     refetchTrek()
                   }}
-                  className="px-4 py-2 bg-signal-orange text-white font-ui font-medium rounded-md text-sm hover:bg-signal-orange/90 transition-colors"
+                  className="px-4 py-2 bg-signal-orange text-catalog-cream font-ui font-medium rounded-lg text-sm hover:bg-signal-orange/90 transition-colors"
                 >
                   Retry
                 </button>
               </div>
             ) : lessonContent ? (
-              <div className="max-w-2xl mx-auto">
+              <div className="max-w-[640px] mx-auto">
                 <LessonRenderer
                   content={lessonContent}
                   section={displayedSection}
@@ -322,13 +279,13 @@ export default function LearningView() {
                 />
               </div>
             ) : displayedSection ? (
-              <div className="max-w-2xl mx-auto">
+              <div className="max-w-[640px] mx-auto">
                 <SherpaTerminal>
-                  {'>'} Preparing your trail...
+                  Preparing your trail...
                 </SherpaTerminal>
               </div>
             ) : (
-              <div className="max-w-2xl mx-auto text-center py-12">
+              <div className="max-w-[640px] mx-auto text-center py-12">
                 <h2 className="font-display text-2xl text-ink mb-2">All sections complete</h2>
                 <p className="font-body text-trail-brown mb-2">
                   The summit challenge awaits.
@@ -340,7 +297,7 @@ export default function LearningView() {
                 )}
                 <button
                   onClick={() => navigate('/summit')}
-                  className="px-8 py-3 bg-summit-cobalt text-white font-ui font-semibold rounded-lg hover:bg-summit-cobalt/90 transition-colors"
+                  className="px-8 py-3 bg-summit-cobalt text-catalog-cream font-ui font-semibold rounded-lg hover:bg-summit-cobalt/90 transition-colors"
                 >
                   Attempt Summit
                 </button>
@@ -349,7 +306,7 @@ export default function LearningView() {
           </div>
 
           {/* Bottom bar */}
-          <div className="border-t border-trail-brown/15 bg-white/50 px-4 sm:px-8 lg:px-12 py-3 flex items-center justify-between">
+          <div className="border-t border-trail-brown/15 bg-cream-light/50 px-4 sm:px-8 lg:px-12 py-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setSherpaOpen(true)}
@@ -379,7 +336,6 @@ export default function LearningView() {
                 Voice Chat
               </button>
             </div>
-            {/* Section completion is handled in LessonRenderer */}
           </div>
         </main>
       </div>
@@ -395,7 +351,7 @@ export default function LearningView() {
               value={journalText}
               onChange={(e) => { setJournalText(e.target.value); setJournalError(null) }}
               placeholder="A quick note about what you're learning..."
-              className="w-full h-20 px-3 py-2 font-body text-sm text-ink bg-white border border-trail-brown/20 rounded-md resize-none focus:outline-none focus:ring-1 focus:ring-summit-cobalt/40"
+              className="w-full h-20 px-4 py-3 font-body text-sm text-ink bg-cream-light border border-trail-brown/25 rounded-md resize-none focus:outline-none focus:border-summit-cobalt placeholder:font-body placeholder:font-light placeholder:italic placeholder:text-trail-brown/50"
               autoFocus
             />
             {journalError && (
@@ -404,14 +360,14 @@ export default function LearningView() {
             <div className="flex justify-end gap-2 mt-2">
               <button
                 onClick={() => { setJournalOpen(false); setJournalText('') }}
-                className="px-3 py-1 text-xs font-ui text-trail-brown hover:text-ink transition-colors"
+                className="px-3 py-1 text-xs font-body text-trail-brown hover:underline transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleJournalSubmit}
                 disabled={!journalText.trim()}
-                className="px-3 py-1 text-xs font-ui font-medium bg-summit-cobalt text-white rounded-md hover:bg-summit-cobalt/90 transition-colors disabled:opacity-50"
+                className="px-3 py-1 text-xs font-ui font-medium bg-summit-cobalt text-catalog-cream rounded-md hover:bg-summit-cobalt/90 transition-colors disabled:opacity-50"
               >
                 Save Note
               </button>
@@ -443,6 +399,6 @@ export default function LearningView() {
         trekId={trek?.id}
         sectionId={displayedSection?.id}
       />
-    </div>
+    </>
   )
 }

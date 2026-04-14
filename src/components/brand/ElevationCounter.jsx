@@ -17,7 +17,7 @@ export default function ElevationCounter({ elevation = 0 }) {
 
   return (
     <span
-      className={`inline-flex items-center gap-1 font-mono font-bold text-phosphor-green text-sm ${animate ? 'elevation-animate' : ''}`}
+      className={`inline-flex items-center gap-1 font-mono font-bold text-phosphor-green text-sm px-2.5 py-1 bg-[rgba(13,15,20,0.8)] rounded ${animate ? 'elevation-animate' : ''}`}
     >
       <span className="text-xs">&#9650;</span>
       {formatted} ft

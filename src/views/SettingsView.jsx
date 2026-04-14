@@ -4,9 +4,6 @@ import { useAuth } from '../context/AuthContext'
 import { useProfile } from '../hooks/useProfile'
 import { getExpeditionDay } from '../lib/expedition'
 import { createCheckoutSession, getSubscriptionStatus } from '../lib/stripe'
-import FourColorBar from '../components/brand/FourColorBar'
-import WordMark from '../components/brand/WordMark'
-import ElevationCounter from '../components/brand/ElevationCounter'
 import PageTitle from '../components/ui/PageTitle'
 
 export default function SettingsView() {
@@ -61,24 +58,10 @@ export default function SettingsView() {
   }, [signOut, navigate])
 
   return (
-    <div className="min-h-screen bg-catalog-cream flex flex-col">
+    <>
       <PageTitle title="Settings" />
-      <FourColorBar />
 
-      <header className="px-4 sm:px-6 py-4 flex items-center justify-between border-b border-trail-brown/20">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => navigate('/')}
-            className="text-sm font-ui text-trail-brown hover:text-ink transition-colors"
-          >
-            &larr; Home
-          </button>
-          <WordMark size="sm" />
-        </div>
-        <ElevationCounter elevation={profile?.current_elevation || 0} />
-      </header>
-
-      <main className="flex-1 px-4 sm:px-6 py-8 max-w-lg mx-auto w-full space-y-8">
+      <div className="flex-1 px-4 sm:px-6 py-8 max-w-lg mx-auto w-full space-y-8">
         <h1 className="font-display text-3xl text-ink">Settings</h1>
 
         {/* Upgrade success banner */}
@@ -215,7 +198,7 @@ export default function SettingsView() {
         >
           Sign Out
         </button>
-      </main>
-    </div>
+      </div>
+    </>
   )
 }

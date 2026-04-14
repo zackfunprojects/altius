@@ -1,12 +1,8 @@
 import { useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useProfile } from '../hooks/useProfile'
 import { useExpeditionEvents } from '../hooks/useExpeditionEvents'
 import { useElevationLog } from '../hooks/useElevationLog'
-import FourColorBar from '../components/brand/FourColorBar'
-import WordMark from '../components/brand/WordMark'
-import ElevationCounter from '../components/brand/ElevationCounter'
 import SherpaTerminal from '../components/brand/SherpaTerminal'
+import JournalPaper from '../components/brand/JournalPaper'
 import PageTitle from '../components/ui/PageTitle'
 
 const EVENT_ICONS = {
@@ -35,8 +31,6 @@ function formatTimestamp(ts) {
 }
 
 export default function ExpeditionLogView() {
-  const navigate = useNavigate()
-  const { profile } = useProfile()
   const { events, loading: eventsLoading } = useExpeditionEvents()
   const { entries: elevationEntries, loading: elevationLoading } = useElevationLog()
   const loading = eventsLoading || elevationLoading
@@ -67,78 +61,62 @@ export default function ExpeditionLogView() {
       })
     }
 
-    // Sort by timestamp descending
     items.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-
     return items
   }, [events, elevationEntries])
 
   return (
-    <div className="min-h-screen bg-terminal-dark flex flex-col">
+    <>
       <PageTitle title="Expedition Log" />
-      <div className="bg-catalog-cream">
-        <FourColorBar />
-      </div>
 
-      <header className="px-4 sm:px-6 py-3 flex items-center justify-between border-b border-phosphor-green/10">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => navigate('/')}
-            className="font-mono text-sm text-phosphor-green/60 hover:text-phosphor-green transition-colors"
-          >
-            &larr; Home
-          </button>
-          <WordMark size="sm" />
-        </div>
-        <ElevationCounter elevation={profile?.current_elevation || 0} />
-      </header>
-
-      <div className="text-center px-4 sm:px-6 pt-6 pb-3">
-        <h1 className="font-mono text-phosphor-green text-lg phosphor-glow">Expedition Log</h1>
-        <p className="font-mono text-phosphor-green/40 text-xs mt-1">
+      <div className="text-center px-4 sm:px-6 pt-8 pb-4">
+        <h1 className="font-display text-4xl text-ink">Expedition Log</h1>
+        <p className="font-body text-trail-brown text-sm mt-2">
           {feed.length} entries recorded
         </p>
       </div>
 
-      <main className="flex-1 px-4 sm:px-6 py-4 max-w-2xl mx-auto w-full overflow-y-auto">
+      <div className="flex-1 px-4 sm:px-6 py-4 max-w-2xl mx-auto w-full overflow-y-auto">
         {loading ? (
           <div className="py-8 text-center">
-            <p className="font-mono text-phosphor-green/50 text-sm">Loading expedition log...</p>
+            <p className="font-mono text-trail-brown text-sm italic">Loading expedition log...</p>
           </div>
         ) : feed.length === 0 ? (
           <div className="py-8">
             <SherpaTerminal>
-              {'>'} No entries yet. Start a trek and the log will fill itself.
+              No entries yet. Start a trek and the log will fill itself.
             </SherpaTerminal>
           </div>
         ) : (
-          <div className="space-y-1">
-            {feed.map((item, i) => (
-              <div
-                key={`${item.timestamp}-${i}`}
-                className="flex items-start gap-3 py-1.5 font-mono text-xs"
-              >
-                <span className="text-phosphor-green/30 w-28 flex-shrink-0 text-right">
-                  {formatTimestamp(item.timestamp)}
-                </span>
-                <span className={`w-5 flex-shrink-0 text-center ${
-                  item.type === 'event' ? 'text-alpine-gold' : 'text-phosphor-green/60'
-                }`}>
-                  {item.icon}
-                </span>
-                <span className="text-phosphor-green/80 flex-1 min-w-0">
-                  {item.title}
-                  {item.delta && (
-                    <span className="text-phosphor-green ml-2 font-bold">
-                      +{item.delta} ft
-                    </span>
-                  )}
-                </span>
-              </div>
-            ))}
-          </div>
+          <JournalPaper>
+            <div className="space-y-3">
+              {feed.map((item, i) => (
+                <div
+                  key={`${item.timestamp}-${i}`}
+                  className="flex items-start gap-3 py-1"
+                >
+                  <span className="font-ui text-[10px] text-trail-brown/50 w-28 flex-shrink-0 text-right pt-0.5">
+                    {formatTimestamp(item.timestamp)}
+                  </span>
+                  <span className={`font-mono text-xs w-5 flex-shrink-0 text-center pt-0.5 ${
+                    item.type === 'event' ? 'text-alpine-gold' : 'text-summit-cobalt/60'
+                  }`}>
+                    {item.icon}
+                  </span>
+                  <span className="font-body text-sm text-ink flex-1 min-w-0">
+                    {item.title}
+                    {item.delta && (
+                      <span className="font-mono text-xs text-phosphor-green ml-2 font-bold">
+                        +{item.delta} ft
+                      </span>
+                    )}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </JournalPaper>
         )}
-      </main>
-    </div>
+      </div>
+    </>
   )
 }

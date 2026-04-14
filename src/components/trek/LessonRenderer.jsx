@@ -95,10 +95,10 @@ export default function LessonRenderer({ content, section, onComplete, completin
     <div>
       {/* Section header */}
       {section && (
-        <div className="mb-6">
-          <h2 className="font-display text-2xl text-ink">{section.title}</h2>
+        <div className="mb-8">
+          <h2 className="font-display text-[28px] text-ink">{section.title}</h2>
           {content.estimated_minutes && (
-            <p className="text-xs font-ui text-trail-brown mt-1">
+            <p className="text-xs font-ui text-trail-brown mt-2">
               ~{content.estimated_minutes} min
             </p>
           )}
@@ -106,7 +106,7 @@ export default function LessonRenderer({ content, section, onComplete, completin
       )}
 
       {/* Content blocks */}
-      <div className="space-y-5">
+      <div className="space-y-6">
         {narrative.map((block, i) =>
           renderBlock(block, i, {
             exerciseCounter,
@@ -121,19 +121,25 @@ export default function LessonRenderer({ content, section, onComplete, completin
 
       {/* Section complete button */}
       {onComplete && (
-        <div className="mt-8 pt-6 border-t border-trail-brown/15">
-          {!allExercisesDone && (
-            <p className="text-xs font-ui text-signal-orange mb-3">
-              Complete all exercises before advancing ({completedCount}/{totalExercises})
-            </p>
-          )}
-          <div className="flex justify-end">
+        <div className="mt-10 pt-6 border-t border-trail-brown/15 flex items-center justify-between">
+          <button
+            onClick={() => window.history.back()}
+            className="font-body text-sm text-trail-brown hover:underline"
+          >
+            Back
+          </button>
+          <div className="text-right">
+            {!allExercisesDone && (
+              <p className="text-xs font-ui text-signal-orange mb-2">
+                Complete all exercises before advancing ({completedCount}/{totalExercises})
+              </p>
+            )}
             <button
               onClick={onComplete}
               disabled={completing || !allExercisesDone}
-              className="px-6 py-2.5 bg-summit-cobalt text-white font-ui font-semibold rounded-lg hover:bg-summit-cobalt/90 transition-colors disabled:opacity-50"
+              className="px-6 py-2.5 bg-summit-cobalt text-catalog-cream font-ui font-semibold rounded-lg hover:bg-summit-cobalt/90 transition-colors disabled:opacity-50"
             >
-              {completing ? 'Marking complete...' : 'Continue to Next Section'}
+              {completing ? 'Marking complete...' : 'Next Section'}
             </button>
           </div>
         </div>

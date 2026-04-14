@@ -5,10 +5,8 @@ import { useProfile } from '../hooks/useProfile'
 import { useActiveTrek } from '../hooks/useActiveTrek'
 import { getMorningQuestion } from '../lib/sherpa'
 import { abandonTrek } from '../lib/trek'
-import FourColorBar from '../components/brand/FourColorBar'
-import WordMark from '../components/brand/WordMark'
-import ElevationCounter from '../components/brand/ElevationCounter'
 import DifficultyBadge from '../components/brand/DifficultyBadge'
+import SherpaTerminal from '../components/brand/SherpaTerminal'
 import MorningQuestion from '../components/MorningQuestion'
 import NewTrekFlow from '../components/trek/NewTrekFlow'
 import PageTitle from '../components/ui/PageTitle'
@@ -21,9 +19,6 @@ export default function LandingView() {
 
   const [morningQuestion, setMorningQuestion] = useState(null)
   const [showMorningQuestion, setShowMorningQuestion] = useState(false)
-  const [showFirstTimeGuide, setShowFirstTimeGuide] = useState(() => {
-    return !localStorage.getItem('altius_first_time_dismissed')
-  })
   const [showAbandonConfirm, setShowAbandonConfirm] = useState(false)
   const [abandoning, setAbandoning] = useState(false)
   const [abandonError, setAbandonError] = useState(null)
@@ -66,30 +61,14 @@ export default function LandingView() {
   }, [trek?.id, trekLoading])
 
   return (
-    <div className="min-h-screen bg-catalog-cream flex flex-col">
+    <>
       <PageTitle title="Home" />
-      <FourColorBar />
-      <header className="px-4 sm:px-6 py-4 flex items-center justify-between border-b border-trail-brown/20">
-        <WordMark size="sm" />
-        <div className="flex items-center gap-4">
-          <ElevationCounter elevation={profile?.current_elevation || 0} />
-          <button
-            onClick={() => navigate('/settings')}
-            className="text-trail-brown/60 hover:text-ink transition-colors"
-            title="Settings"
-          >
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <circle cx="9" cy="9" r="3" />
-              <path d="M9 1.5V3M9 15V16.5M1.5 9H3M15 9H16.5M3.1 3.1L4.2 4.2M13.8 13.8L14.9 14.9M3.1 14.9L4.2 13.8M13.8 4.2L14.9 3.1" strokeLinecap="round" />
-            </svg>
-          </button>
-        </div>
-      </header>
-      <main className="flex-1 flex items-center justify-center px-4 sm:px-6 py-8">
-        <div className="w-full max-w-lg">
+
+      <div className="flex-1 flex items-center justify-center px-4 sm:px-6 py-8">
+        <div className="w-full max-w-[720px] space-y-10">
           {trekLoading ? (
             <div className="text-center">
-              <p className="font-mono text-trail-brown text-sm">Loading your trek...</p>
+              <p className="font-mono text-trail-brown text-sm italic">Loading your trek...</p>
             </div>
           ) : trekError ? (
             <div className="text-center space-y-4">
@@ -98,106 +77,135 @@ export default function LandingView() {
               </p>
               <button
                 onClick={() => window.location.reload()}
-                className="px-4 py-2 bg-signal-orange text-white font-ui font-semibold rounded-md hover:bg-signal-orange/90 transition-colors text-sm"
+                className="px-4 py-2 bg-signal-orange text-catalog-cream font-ui font-semibold rounded-lg hover:bg-signal-orange/90 transition-colors text-sm"
               >
                 Retry
               </button>
             </div>
           ) : trek ? (
-            <div className="space-y-6">
-              {/* Active trek display */}
+            <>
+              {/* Trek Header */}
               <div className="text-center">
-                <h1 className="font-display text-3xl sm:text-4xl text-ink mb-2">
+                <h1 className="font-display text-[32px] text-ink mb-3">
                   {trek.trek_name}
                 </h1>
                 <div className="flex items-center justify-center gap-3">
                   <DifficultyBadge difficulty={trek.difficulty} />
-                  <span className="text-sm font-ui text-trail-brown">
-                    {trek.estimated_duration}
+                  {trek.estimated_duration && (
+                    <span className="font-body font-light text-sm text-trail-brown">
+                      {trek.estimated_duration}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Trail Progress Card */}
+              <div className="bg-cream-light rounded-lg border border-trail-brown/20 p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="font-ui font-medium text-[10px] uppercase tracking-[0.12em] text-trail-brown">
+                    Trail Progress
+                  </span>
+                  <span className="font-ui font-medium text-[10px] uppercase tracking-[0.12em] text-trail-brown">
+                    {trek.completed_camps || 0} / {trek.total_camps} Camps
                   </span>
                 </div>
-              </div>
+                <div className="relative pl-5">
+                  {/* Vertical trail line */}
+                  <div className="absolute left-[9px] top-1 bottom-1 w-0.5 bg-trail-brown/20" />
+                  <div
+                    className="absolute left-[9px] top-1 w-0.5 bg-summit-cobalt transition-all"
+                    style={{
+                      height: camps?.length
+                        ? `${((camps.filter(c => c.status === 'completed').length) / camps.length) * 100}%`
+                        : '0%'
+                    }}
+                  />
 
-              {/* Camp progress */}
-              <div className="bg-white/50 rounded-lg border border-trail-brown/15 p-4">
-                <p className="text-xs font-ui font-medium text-trail-brown/70 uppercase tracking-wider mb-3">
-                  Trail Progress - {trek.completed_camps || 0} / {trek.total_camps} camps
-                </p>
-                <div className="space-y-2">
-                  {(camps || []).map((camp) => (
-                    <div key={camp.id} className="flex items-center gap-2">
-                      <div
-                        className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
-                          camp.status === 'completed'
-                            ? 'bg-phosphor-green'
-                            : camp.status === 'active'
-                              ? 'bg-summit-cobalt'
-                              : 'bg-trail-brown/20'
-                        }`}
-                      />
-                      <span
-                        className={`text-sm font-body ${
-                          camp.status === 'completed'
-                            ? 'text-trail-brown/60 line-through'
-                            : camp.status === 'active'
-                              ? 'text-ink font-medium'
-                              : 'text-trail-brown/40'
-                        }`}
-                      >
-                        {camp.camp_name}
-                      </span>
-                    </div>
-                  ))}
+                  <div className="space-y-6">
+                    {(camps || []).map((camp) => (
+                      <div key={camp.id} className="flex items-center gap-3 relative">
+                        {/* Camp node */}
+                        <div
+                          className={`absolute -left-5 w-3 h-3 rounded-full border-2 flex-shrink-0 z-10 ${
+                            camp.status === 'completed'
+                              ? 'bg-summit-cobalt border-summit-cobalt'
+                              : camp.status === 'active'
+                                ? 'bg-signal-orange border-signal-orange camp-active-pulse'
+                                : 'bg-transparent border-trail-brown/30 border-dashed'
+                          }`}
+                        >
+                          {camp.status === 'completed' && (
+                            <svg className="w-full h-full text-catalog-cream" viewBox="0 0 12 12">
+                              <path d="M3 6L5.5 8.5L9 4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          )}
+                        </div>
+
+                        <span
+                          className={`font-body text-base ${
+                            camp.status === 'completed'
+                              ? 'text-ink'
+                              : camp.status === 'active'
+                                ? 'text-ink font-medium'
+                                : 'text-trail-brown/50'
+                          }`}
+                        >
+                          {camp.camp_name}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
 
-              {/* First-time guide */}
-              {showFirstTimeGuide && (
-                <div className="p-4 bg-summit-cobalt/10 border border-summit-cobalt/20 rounded-lg relative">
-                  <button
-                    onClick={() => { setShowFirstTimeGuide(false); localStorage.setItem('altius_first_time_dismissed', 'true') }}
-                    className="absolute top-2 right-2 text-trail-brown/40 hover:text-ink text-xs"
-                  >
-                    Dismiss
-                  </button>
-                  <p className="text-sm font-ui text-ink font-medium mb-1">Ready to start climbing?</p>
-                  <p className="text-xs font-body text-trail-brown/70 leading-relaxed pr-8">
-                    Click "Start next lesson" to begin learning. Your elevation goes up as you complete lessons and exercises. The Sherpa is always available if you get stuck.
-                  </p>
-                </div>
-              )}
+              {/* Sherpa Welcome Card */}
+              <SherpaTerminal>
+                Morning on the mountain. You left off at Camp {(trek.completed_camps || 0) + 1}. The trail is clear. Ready when you are.
+              </SherpaTerminal>
 
-              {/* Action buttons */}
+              {/* Action Buttons */}
               <div className="space-y-3">
+                {/* Primary: Start Next Lesson */}
                 <button
                   onClick={() => navigate('/learn')}
-                  className="w-full py-3 bg-summit-cobalt text-white font-ui font-semibold rounded-lg hover:bg-summit-cobalt/90 transition-colors"
+                  className="w-full h-14 bg-summit-cobalt text-catalog-cream font-ui font-semibold rounded-lg hover:bg-summit-cobalt/90 transition-colors text-sm"
                 >
-                  <span className="block">Start next lesson</span>
-                  <span className="block text-xs font-normal text-white/60 mt-0.5">Continue where you left off</span>
+                  <span className="block">Start Next Lesson</span>
+                  <span className="block text-xs font-normal text-catalog-cream/70 mt-0.5">Continue where you left off</span>
                 </button>
+
+                {/* Secondary: View Trail */}
                 <button
                   onClick={() => navigate('/trail')}
-                  className="w-full py-3 bg-terminal-dark text-phosphor-green font-mono rounded-lg border border-phosphor-green/20 hover:border-phosphor-green/40 transition-colors"
+                  className="w-full h-14 bg-transparent border border-trail-brown/40 text-ink font-ui font-medium rounded-lg hover:bg-cream-light transition-colors text-sm"
                 >
                   <span className="block">View Trail</span>
-                  <span className="block text-xs font-normal text-phosphor-green/50 mt-0.5">See your full learning path</span>
+                  <span className="block text-xs font-normal text-trail-brown mt-0.5">See your full learning path</span>
                 </button>
+
+                {/* Tertiary: Talk to the Sherpa */}
                 <button
                   onClick={() => navigate('/chat')}
-                  className="w-full py-3 border border-phosphor-green/30 text-phosphor-green bg-terminal-dark font-mono rounded-lg hover:bg-terminal-dark/90 hover:border-phosphor-green/50 transition-colors"
+                  className="w-full h-14 bg-transparent border border-alpine-gold/40 text-ink font-body italic rounded-lg hover:bg-cream-light transition-colors text-sm"
                 >
                   <span className="block">Talk to the Sherpa</span>
-                  <span className="block text-xs font-normal text-phosphor-green/50 mt-0.5">Ask questions or get help</span>
+                  <span className="block text-xs font-body font-light not-italic text-trail-brown mt-0.5">Ask questions or get help</span>
                 </button>
               </div>
 
-              {/* Abandon trek */}
-              <div className="text-center">
+              {/* Footer links */}
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={() => navigate('/notebook')}
+                  className="font-body text-sm text-summit-cobalt hover:underline transition-colors"
+                >
+                  Trek Notebook
+                </button>
+
                 {!showAbandonConfirm ? (
                   <button
                     onClick={() => setShowAbandonConfirm(true)}
-                    className="text-xs font-ui text-trail-brown/40 hover:text-signal-orange transition-colors"
+                    className="font-body font-light text-xs text-trail-brown/50 hover:text-signal-orange transition-colors"
                   >
                     Abandon this trek
                   </button>
@@ -219,7 +227,7 @@ export default function LandingView() {
                       <button
                         onClick={handleAbandon}
                         disabled={abandoning}
-                        className="px-3 py-1 text-xs font-ui text-white bg-signal-orange rounded disabled:opacity-50"
+                        className="px-3 py-1 text-xs font-ui text-catalog-cream bg-signal-orange rounded disabled:opacity-50"
                       >
                         {abandoning ? 'Abandoning...' : 'Confirm Abandon'}
                       </button>
@@ -227,21 +235,12 @@ export default function LandingView() {
                   </div>
                 )}
               </div>
-            </div>
+            </>
           ) : (
             <NewTrekFlow onComplete={refetchTrek} profile={profile} />
           )}
-          {/* Trek Notebook link - always visible */}
-          <div className="mt-6 text-center">
-            <button
-              onClick={() => navigate('/notebook')}
-              className="text-sm font-ui text-trail-brown/60 hover:text-ink transition-colors underline underline-offset-2"
-            >
-              Trek Notebook
-            </button>
-          </div>
         </div>
-      </main>
+      </div>
 
       {/* Morning Question Modal */}
       {showMorningQuestion && morningQuestion && (
@@ -252,6 +251,6 @@ export default function LandingView() {
           onClose={() => setShowMorningQuestion(false)}
         />
       )}
-    </div>
+    </>
   )
 }

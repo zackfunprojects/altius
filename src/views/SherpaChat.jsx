@@ -1,12 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useActiveTrek } from '../hooks/useActiveTrek'
 import { useSherpaChat } from '../hooks/useSherpaChat'
-import FourColorBar from '../components/brand/FourColorBar'
 import PageTitle from '../components/ui/PageTitle'
 
 export default function SherpaChat() {
-  const navigate = useNavigate()
   const { trek } = useActiveTrek()
   const { messages, sendMessage, loading } = useSherpaChat({
     trekId: trek?.id,
@@ -48,35 +45,23 @@ export default function SherpaChat() {
     : '> No active trek. I\'m here to review what you\'ve learned or help plan your next climb.'
 
   return (
-    <div className="min-h-screen bg-terminal-dark flex flex-col crt-vignette">
+    <div className="flex-1 flex flex-col bg-terminal-dark -mx-0 crt-vignette rounded-lg overflow-hidden">
       <PageTitle title="Sherpa" />
-      <FourColorBar />
 
       {/* Header */}
-      <header className="px-4 sm:px-6 py-3 flex items-center justify-between border-b border-phosphor-green/15">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => navigate('/')}
-            className="text-trail-brown hover:text-phosphor-green transition-colors"
-            aria-label="Back to dashboard"
-          >
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <path d="M12.5 15L7.5 10L12.5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-phosphor-green animate-pulse" />
-            <span className="font-mono text-phosphor-green text-lg phosphor-glow">
-              The Sherpa
-            </span>
-          </div>
+      <div className="px-4 sm:px-6 py-3 flex items-center justify-between border-b border-phosphor-green/15">
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-phosphor-green animate-pulse" />
+          <span className="font-mono text-phosphor-green text-lg phosphor-glow">
+            The Sherpa
+          </span>
         </div>
         {trek && (
           <span className="text-xs font-mono text-phosphor-green/40">
             {trek.trek_name}
           </span>
         )}
-      </header>
+      </div>
 
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto crt-scanlines">
@@ -119,12 +104,12 @@ export default function SherpaChat() {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Speak with the Sherpa..."
-            className="flex-1 bg-terminal-dark border border-phosphor-green/20 rounded-md px-4 py-2.5 font-mono text-sm text-phosphor-green placeholder-phosphor-green/30 focus:outline-none focus:border-phosphor-green/40"
+            className="flex-1 bg-transparent border border-phosphor-green/20 rounded-md px-4 py-2.5 font-mono text-sm text-phosphor-green placeholder-phosphor-green/30 focus:outline-none focus:border-phosphor-green/40"
           />
           <button
             onClick={handleSend}
             disabled={!input.trim() || loading}
-            className="px-4 py-2.5 bg-phosphor-green/15 text-phosphor-green rounded-md font-mono text-sm hover:bg-phosphor-green/25 transition-colors disabled:opacity-30"
+            className="px-4 py-2.5 border border-phosphor-green/30 text-phosphor-green rounded-md font-mono text-sm hover:bg-phosphor-green/10 transition-colors disabled:opacity-30"
           >
             Send
           </button>

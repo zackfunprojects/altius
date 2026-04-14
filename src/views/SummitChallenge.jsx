@@ -4,9 +4,6 @@ import { useActiveTrek } from '../hooks/useActiveTrek'
 import { useProfile } from '../hooks/useProfile'
 import { evaluateSummit } from '../lib/sherpa'
 import { completeTrek } from '../lib/trek'
-import FourColorBar from '../components/brand/FourColorBar'
-import WordMark from '../components/brand/WordMark'
-import ElevationCounter from '../components/brand/ElevationCounter'
 import SherpaTerminal from '../components/brand/SherpaTerminal'
 import JournalPaper from '../components/brand/JournalPaper'
 import DifficultyBadge from '../components/brand/DifficultyBadge'
@@ -74,8 +71,8 @@ export default function SummitChallenge() {
   // Loading
   if (trekLoading) {
     return (
-      <div className="min-h-screen bg-catalog-cream flex items-center justify-center">
-        <p className="font-mono text-trail-brown text-sm">Loading summit...</p>
+      <div className="flex-1 flex items-center justify-center">
+        <p className="font-mono text-trail-brown text-sm italic">Loading summit...</p>
       </div>
     )
   }
@@ -83,48 +80,32 @@ export default function SummitChallenge() {
   // Guard: no trek or camps not complete
   if (!trek || !allCampsComplete) {
     return (
-      <div className="min-h-screen bg-catalog-cream flex flex-col">
-        <FourColorBar />
+      <>
         <div className="flex-1 flex items-center justify-center p-6">
           <div className="text-center max-w-md">
             <SherpaTerminal>
               {trek
-                ? '> You have not completed all camps yet. Return to the trail and finish the work.'
-                : '> No active trek. The summit waits for those who climb.'}
+                ? 'You have not completed all camps yet. Return to the trail and finish the work.'
+                : 'No active trek. The summit waits for those who climb.'}
             </SherpaTerminal>
             <button
               onClick={() => navigate(trek ? '/learn' : '/')}
-              className="mt-6 px-6 py-2.5 bg-summit-cobalt text-white font-ui font-semibold rounded-lg hover:bg-summit-cobalt/90 transition-colors text-sm"
+              className="mt-6 px-6 py-2.5 bg-summit-cobalt text-catalog-cream font-ui font-semibold rounded-lg hover:bg-summit-cobalt/90 transition-colors text-sm"
             >
               {trek ? 'Return to Trail' : 'Go Home'}
             </button>
           </div>
         </div>
-      </div>
+      </>
     )
   }
 
   return (
-    <div className="min-h-screen bg-catalog-cream flex flex-col">
+    <>
       <PageTitle title="Summit Challenge" />
-      <FourColorBar />
-
-      {/* Header */}
-      <header className="px-4 sm:px-6 py-4 flex items-center justify-between border-b border-trail-brown/20">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => navigate('/learn')}
-            className="text-sm font-ui text-trail-brown hover:text-ink transition-colors"
-          >
-            &larr; Back
-          </button>
-          <WordMark size="sm" />
-        </div>
-        <ElevationCounter elevation={profile?.current_elevation || 0} />
-      </header>
 
       {/* Main content */}
-      <main className="flex-1 px-4 sm:px-6 py-8 max-w-2xl mx-auto w-full">
+      <div className="flex-1 px-4 sm:px-6 py-8 max-w-2xl mx-auto w-full">
         {/* Trek info */}
         <div className="text-center mb-8">
           <h1 className="font-display text-3xl text-ink mb-2">Summit Challenge</h1>
@@ -274,7 +255,7 @@ export default function SummitChallenge() {
             )}
           </div>
         )}
-      </main>
-    </div>
+      </div>
+    </>
   )
 }

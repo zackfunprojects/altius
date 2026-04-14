@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTrekJournal } from '../hooks/useTrekJournal'
 import { useExpeditionEvents } from '../hooks/useExpeditionEvents'
 import { awardElevation, getElevationDelta } from '../lib/elevation'
+import SherpaTerminal from './brand/SherpaTerminal'
 
 export default function MorningQuestion({ question, trekId, userId, onClose }) {
   const [answer, setAnswer] = useState('')
@@ -15,12 +16,10 @@ export default function MorningQuestion({ question, trekId, userId, onClose }) {
     setSubmitting(true)
 
     try {
-      // Save to journal
       await addNote({
         body: `Morning question: ${question}\n\nMy answer: ${answer.trim()}`,
       })
 
-      // Fire expedition event
       await fireEvent({
         eventType: 'morning_question',
         title: 'Morning question answered',
@@ -28,7 +27,6 @@ export default function MorningQuestion({ question, trekId, userId, onClose }) {
         elevationBonus: 2,
       })
 
-      // Award elevation
       await awardElevation({
         userId,
         delta: getElevationDelta('event_bonus', { delta: 2 }),
@@ -36,13 +34,11 @@ export default function MorningQuestion({ question, trekId, userId, onClose }) {
         sourceId: null,
         trekId,
       })
-      // Mark as answered for today only on success
       localStorage.setItem('altius_morning_q_date', new Date().toLocaleDateString('en-CA'))
       onClose()
     } catch (err) {
       console.error('Failed to save morning question answer:', err)
       setSubmitting(false)
-      return
     }
   }
 
@@ -54,44 +50,33 @@ export default function MorningQuestion({ question, trekId, userId, onClose }) {
   return (
     <div role="dialog" aria-modal="true" aria-label="Morning question from the Sherpa" className="fixed inset-0 z-50 bg-terminal-dark crt-vignette crt-scanlines flex items-center justify-center p-4">
       <div className="w-full max-w-lg">
-        {/* Greeting */}
-        <div className="mb-6">
-          <p className="font-mono text-phosphor-green/50 text-sm phosphor-glow mb-2">
-            {'>'} Morning on the mountain.
-          </p>
-          <p className="font-mono text-phosphor-green/60 text-sm phosphor-glow">
-            {'>'} A question from the trail:
-          </p>
-        </div>
-
-        {/* Question */}
-        <div className="mb-6 bg-terminal-dark border border-phosphor-green/20 rounded-lg p-5">
-          <p className="font-mono text-phosphor-green text-base phosphor-glow leading-relaxed">
+        <SherpaTerminal label="THE SHERPA ASKS">
+          <span className="text-xl not-italic block mb-4 leading-relaxed">
             {question}
-          </p>
-        </div>
+          </span>
+        </SherpaTerminal>
 
         {/* Answer area */}
         <textarea
           value={answer}
           onChange={(e) => setAnswer(e.target.value)}
           placeholder="Take a moment to reflect..."
-          className="w-full h-28 bg-terminal-dark border border-phosphor-green/20 rounded-md px-4 py-3 font-mono text-sm text-phosphor-green placeholder-phosphor-green/30 focus:outline-none focus:border-phosphor-green/40 resize-none mb-4"
+          className="w-full h-28 mt-4 bg-[rgba(255,255,255,0.05)] border border-phosphor-green/20 rounded-md px-4 py-3 font-mono text-sm text-catalog-cream placeholder-phosphor-green/30 focus:outline-none focus:border-phosphor-green/50 resize-none"
           autoFocus
         />
 
         {/* Actions */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mt-4">
           <button
             onClick={handleDismiss}
-            className="text-sm font-mono text-trail-brown hover:text-trail-brown/80 transition-colors"
+            className="font-ui text-sm text-trail-brown hover:text-catalog-cream/60 transition-colors"
           >
-            Dismiss
+            Begin the day's climb
           </button>
           <button
             onClick={handleAnswer}
             disabled={!answer.trim() || submitting}
-            className="px-5 py-2 bg-phosphor-green/15 text-phosphor-green rounded-md font-mono text-sm hover:bg-phosphor-green/25 transition-colors disabled:opacity-30"
+            className="px-5 py-2 border border-phosphor-green/30 text-phosphor-green rounded-md font-mono text-sm hover:bg-phosphor-green/10 transition-colors disabled:opacity-30"
           >
             {submitting ? 'Saving...' : 'Answer (+2 ft)'}
           </button>

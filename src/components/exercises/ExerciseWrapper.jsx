@@ -1,6 +1,8 @@
 import { useState, useCallback, lazy, Suspense } from 'react'
 import { evaluateExercise } from '../../lib/sherpa'
 import ExerciseStatusBar from './ExerciseStatusBar'
+import FourColorBar from '../brand/FourColorBar'
+import SherpaTerminal from '../brand/SherpaTerminal'
 import MultipleChoiceLedge from '../ledges/MultipleChoiceLedge'
 import ShortAnswerLedge from '../ledges/ShortAnswerLedge'
 import WritingEditorLedge from '../ledges/WritingEditorLedge'
@@ -182,23 +184,15 @@ export default function ExerciseWrapper({ spec, exerciseIndex, sectionId, trekId
   }
 
   return (
-    <div className="bg-white rounded-lg border border-trail-brown/15 overflow-hidden">
-      {/* Signal-orange accent bar */}
-      <div className="flex">
-        <div className="w-1 bg-signal-orange shrink-0" />
+    <div className="bg-cream-light rounded-lg border border-trail-brown/15 overflow-hidden">
+      {/* FourColorBar accent */}
+      <FourColorBar height="h-[3px]" />
 
-        <div className="flex-1 p-5">
-          {/* Header */}
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-5 h-5 rounded-full bg-signal-orange/15 flex items-center justify-center">
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                <path d="M6 2V6L8.5 7.5" stroke="#D9511C" strokeWidth="1.2" strokeLinecap="round" />
-              </svg>
-            </div>
-            <span className="text-xs font-ui font-medium text-signal-orange uppercase tracking-wider">
-              Practice
-            </span>
-          </div>
+      <div className="p-5">
+        {/* Header */}
+        <p className="font-ui font-medium text-[9px] uppercase tracking-[0.12em] text-summit-cobalt mb-3">
+          Practice Ledge
+        </p>
 
           {/* Prompt / instructions */}
           {spec.prompt && (
@@ -234,42 +228,39 @@ export default function ExerciseWrapper({ spec, exerciseIndex, sectionId, trekId
             </div>
           )}
 
-          {/* Feedback */}
-          {feedback && status !== 'idle' && (
-            <div className={`mt-3 px-4 py-3 rounded-md text-sm font-body ${
-              feedback.passed
-                ? 'bg-phosphor-green/10 text-ink'
-                : 'bg-terminal-dark'
-            }`}>
-              {feedback.passed ? (
-                <p>{feedback.feedback || 'Well done. Moving forward.'}</p>
-              ) : (
-                <div className="font-mono text-phosphor-green text-xs leading-relaxed">
-                  {feedback.feedback}
-                </div>
-              )}
+        {/* Feedback */}
+        {feedback && status !== 'idle' && (
+          feedback.passed ? (
+            <div className="mt-3 px-4 py-3 rounded-md bg-phosphor-green/10 text-sm font-body text-ink">
+              <p>{feedback.feedback || 'Well done. Moving forward.'}</p>
             </div>
-          )}
+          ) : (
+            <div className="mt-3">
+              <SherpaTerminal>
+                {feedback.feedback}
+              </SherpaTerminal>
+            </div>
+          )
+        )}
 
-          {/* Submit / Retry */}
-          <div className="mt-4">
-            {status === 'failed' ? (
-              <button
-                onClick={handleRetry}
-                className="px-4 py-2 bg-signal-orange text-white font-ui font-medium rounded-md text-sm hover:bg-signal-orange/90 transition-colors"
-              >
-                Try Again
-              </button>
-            ) : status !== 'passed' ? (
-              <button
-                onClick={handleSubmit}
-                disabled={isSubmitDisabled}
-                className="px-4 py-2 bg-signal-orange text-white font-ui font-medium rounded-md text-sm hover:bg-signal-orange/90 transition-colors disabled:opacity-50"
-              >
-                {status === 'submitting' ? 'Evaluating...' : 'Submit'}
-              </button>
-            ) : null}
-          </div>
+        {/* Submit / Retry */}
+        <div className="mt-4">
+          {status === 'failed' ? (
+            <button
+              onClick={handleRetry}
+              className="px-5 py-2.5 bg-signal-orange text-catalog-cream font-ui font-semibold rounded-lg text-sm hover:bg-signal-orange/90 transition-colors"
+            >
+              Try Again
+            </button>
+          ) : status !== 'passed' ? (
+            <button
+              onClick={handleSubmit}
+              disabled={isSubmitDisabled}
+              className="px-5 py-2.5 bg-signal-orange text-catalog-cream font-ui font-semibold rounded-lg text-sm hover:bg-signal-orange/90 transition-colors disabled:opacity-50"
+            >
+              {status === 'submitting' ? 'Evaluating...' : `Submit (+15 ft)`}
+            </button>
+          ) : null}
         </div>
       </div>
     </div>

@@ -1,0 +1,34 @@
+/* ═══════════════════════════════════════════════════════════
+   ALTIUS v5.0 - CSS Custom Properties
+   Mirror of Tailwind tokens for use in plain CSS contexts
+   (CodeMirror themes, third-party lib styling, etc.)
+   ═══════════════════════════════════════════════════════════ */
+
+:root {
+  /* Brand Colors */
+  --color-cobalt: #1A3D7C;
+  --color-violet: #5C2D82;
+  --color-orange: #D9511C;
+  --color-gold: #D4960B;
+  --color-ink: #1C1814;
+  --color-dark-earth: #2C2418;
+  --color-trail-brown: #8B7355;
+  --color-cream: #F4EDE0;
+  --color-cream-light: #FAF7F2;
+  --color-terminal: #0D0F14;
+  --color-phosphor: #4ADE80;
+
+  /* Typography */
+  --font-display: 'DM Serif Display', Georgia, serif;
+  --font-body: 'Crimson Pro', Georgia, serif;
+  --font-ui: 'Inter', system-ui, sans-serif;
+  --font-mono: 'Courier New', monospace;
+
+  /* Spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 40px;
+  --spacing-2xl: 64px;
+}

@@ -1,5 +1,6 @@
 @import url("https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Crimson+Pro:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500;1,600&family=Inter:wght@400;500;600&display=swap");
 @import "tailwindcss";
+@import "./styles/brand-tokens.css";
 
 /* ═══════════════════════════════════════════════════════════
    ALTIUS v5.0 - Brand Tokens
@@ -15,6 +16,7 @@
   --color-dark-earth: #2C2418;
   --color-trail-brown: #8B7355;
   --color-catalog-cream: #F4EDE0;
+  --color-cream-light: #FAF7F2;
   --color-terminal-dark: #0D0F14;
   --color-phosphor-green: #4ADE80;
 

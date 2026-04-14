@@ -4,6 +4,7 @@ import { useAuth } from './context/AuthContext'
 import { useProfile } from './hooks/useProfile'
 import RouteErrorBoundary from './components/ui/RouteErrorBoundary'
 import NetworkStatus from './components/ui/NetworkStatus'
+import AppShell from './components/AppShell'
 
 // Eager-load auth views (first paint)
 import AuthView from './views/AuthView'
@@ -24,9 +25,11 @@ const SherpaChat = lazy(() => import('./views/SherpaChat'))
 function LoadingFallback() {
   return (
     <div className="min-h-screen bg-terminal-dark flex items-center justify-center">
-      <p className="font-mono text-phosphor-green phosphor-glow text-lg">
-        Loading...
-      </p>
+      <div className="text-center">
+        <p className="font-mono text-phosphor-green phosphor-glow text-sm italic">
+          Preparing the trail...
+        </p>
+      </div>
     </div>
   )
 }
@@ -38,7 +41,7 @@ function ProtectedRoute({ children }) {
   if (authLoading || profileLoading) {
     return (
       <div className="min-h-screen bg-terminal-dark flex items-center justify-center">
-        <p className="font-mono text-phosphor-green phosphor-glow text-lg">
+        <p className="font-mono text-phosphor-green phosphor-glow text-sm italic">
           Checking elevation...
         </p>
       </div>
@@ -60,13 +63,25 @@ function ProtectedRoute({ children }) {
   )
 }
 
+/**
+ * Routes wrapped in the shared AppShell (ink nav bar, FourColorBar, elevation counter).
+ * TrailView and OnboardingFlow opt out - they own their full-screen layouts.
+ */
+function ShellRoute({ children }) {
+  return (
+    <ProtectedRoute>
+      <AppShell>{children}</AppShell>
+    </ProtectedRoute>
+  )
+}
+
 export default function App() {
   const { user, loading } = useAuth()
 
   if (loading) {
     return (
       <div className="min-h-screen bg-terminal-dark flex items-center justify-center">
-        <p className="font-mono text-phosphor-green phosphor-glow text-lg">
+        <p className="font-mono text-phosphor-green phosphor-glow text-sm italic">
           Preparing base camp...
         </p>
       </div>
@@ -87,42 +102,26 @@ export default function App() {
             path="/reset-password"
             element={<ResetPasswordView />}
           />
+          {/* Onboarding: full-screen CRT, no shared shell */}
           <Route
             path="/onboarding"
             element={user ? <RouteErrorBoundary><OnboardingFlow /></RouteErrorBoundary> : <Navigate to="/auth" replace />}
           />
-          <Route
-            path="/"
-            element={<ProtectedRoute><LandingView /></ProtectedRoute>}
-          />
-          <Route
-            path="/learn"
-            element={<ProtectedRoute><LearningView /></ProtectedRoute>}
-          />
+          {/* Trail View: full-screen terminal-dark, no shared shell */}
           <Route
             path="/trail"
             element={<ProtectedRoute><TrailView /></ProtectedRoute>}
           />
-          <Route
-            path="/summit"
-            element={<ProtectedRoute><SummitChallenge /></ProtectedRoute>}
-          />
-          <Route
-            path="/notebook"
-            element={<ProtectedRoute><TrekNotebookView /></ProtectedRoute>}
-          />
-          <Route
-            path="/settings"
-            element={<ProtectedRoute><SettingsView /></ProtectedRoute>}
-          />
-          <Route
-            path="/expedition-log"
-            element={<ProtectedRoute><ExpeditionLogView /></ProtectedRoute>}
-          />
-          <Route
-            path="/chat"
-            element={<ProtectedRoute><SherpaChat /></ProtectedRoute>}
-          />
+
+          {/* All other protected routes use the shared AppShell */}
+          <Route path="/" element={<ShellRoute><LandingView /></ShellRoute>} />
+          <Route path="/learn" element={<ShellRoute><LearningView /></ShellRoute>} />
+          <Route path="/summit" element={<ShellRoute><SummitChallenge /></ShellRoute>} />
+          <Route path="/notebook" element={<ShellRoute><TrekNotebookView /></ShellRoute>} />
+          <Route path="/settings" element={<ShellRoute><SettingsView /></ShellRoute>} />
+          <Route path="/expedition-log" element={<ShellRoute><ExpeditionLogView /></ShellRoute>} />
+          <Route path="/chat" element={<ShellRoute><SherpaChat /></ShellRoute>} />
+
           <Route path="*" element={<NotFoundView />} />
         </Routes>
       </Suspense>

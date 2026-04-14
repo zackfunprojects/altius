@@ -9,7 +9,9 @@ import { useExpeditionEvents } from '../hooks/useExpeditionEvents'
 import { calculateWeatherState } from '../lib/weather'
 import { computeTerrainParams } from '../lib/terrain'
 import { getExpeditionDay } from '../lib/expedition'
+import FourColorBar from '../components/brand/FourColorBar'
 import ElevationCounter from '../components/brand/ElevationCounter'
+import CRTBezel from '../components/brand/CRTBezel'
 import MountainScene from '../components/trail/MountainScene'
 import EventOverlay from '../components/trail/EventOverlay'
 import PageTitle from '../components/ui/PageTitle'
@@ -40,7 +42,6 @@ export default function TrailView() {
 
   const [dismissedIds, setDismissedIds] = useState(() => getDismissedIds(user?.id))
 
-  // Derived state
   const terrainParams = useMemo(
     () => trek ? computeTerrainParams(trek.skill_description, trek.trek_name) : null,
     [trek]
@@ -56,7 +57,6 @@ export default function TrailView() {
     [profile?.created_at]
   )
 
-  // Badges from completed treks (first 6 with skill_badge)
   const badges = useMemo(
     () => notebookEntries
       .filter(e => e.skill_badge)
@@ -65,17 +65,14 @@ export default function TrailView() {
     [notebookEntries]
   )
 
-  // Current camp index (first active, or last completed)
   const currentCampIndex = useMemo(() => {
     if (!camps?.length) return 0
     const activeIdx = camps.findIndex(c => c.status === 'active')
     if (activeIdx >= 0) return activeIdx
-    // If all completed, position at last camp
     const lastCompleted = camps.reduce((acc, c, i) => c.status === 'completed' ? i : acc, 0)
     return lastCompleted
   }, [camps])
 
-  // Event queue - undismissed events
   const pendingEvent = useMemo(() => {
     if (!trek?.id || !events?.length) return null
     return events.find(e => !dismissedIds.has(e.id)) || null
@@ -89,11 +86,10 @@ export default function TrailView() {
     saveDismissedIds(user.id, next)
   }, [pendingEvent, user, dismissedIds])
 
-  // Loading state
   if (trekLoading) {
     return (
       <div className="min-h-screen bg-terminal-dark flex items-center justify-center">
-        <p className="font-mono text-phosphor-green phosphor-glow text-lg">
+        <p className="font-mono text-phosphor-green phosphor-glow text-sm italic">
           Scanning the ridge...
         </p>
       </div>
@@ -103,11 +99,13 @@ export default function TrailView() {
   return (
     <div className="min-h-screen bg-terminal-dark flex flex-col">
       <PageTitle title="Trail" />
-      {/* Nav bar */}
+      <FourColorBar />
+
+      {/* Nav overlay */}
       <nav className="px-4 sm:px-6 py-3 flex items-center justify-between">
         <button
           onClick={() => navigate('/')}
-          className="font-mono text-sm text-phosphor-green/60 hover:text-phosphor-green transition-colors"
+          className="font-mono text-sm text-phosphor-green/60 hover:text-phosphor-green transition-colors phosphor-glow"
         >
           &larr; Base Camp
         </button>
@@ -119,17 +117,17 @@ export default function TrailView() {
           )}
         </div>
         <div className="flex items-center gap-4">
-          <span className="font-mono text-xs text-trail-brown/60">
+          <span className="font-mono text-xs text-phosphor-green/40 phosphor-glow">
             Day {expeditionDay}
           </span>
           <ElevationCounter elevation={profile?.current_elevation || 0} />
         </div>
       </nav>
 
-      {/* CRT Bezel */}
+      {/* CRT Bezel with Mountain Scene */}
       <main className="flex-1 flex items-center justify-center px-3 sm:px-6 py-2 sm:py-4">
-        <div className="crt-bezel w-full max-w-4xl">
-          <div className="crt-screen crt-scanlines crt-vignette aspect-[16/10] relative">
+        <CRTBezel className="w-full max-w-4xl">
+          <div className="aspect-[16/10] relative">
             {trek && terrainParams ? (
               <MountainScene
                 terrainParams={terrainParams}
@@ -139,7 +137,6 @@ export default function TrailView() {
                 badges={badges}
               />
             ) : (
-              /* Empty state - no active trek */
               <div className="absolute inset-0 flex items-center justify-center p-8">
                 <div className="text-center">
                   <p className="font-mono text-phosphor-green phosphor-glow text-lg mb-4">
@@ -152,7 +149,7 @@ export default function TrailView() {
               </div>
             )}
           </div>
-        </div>
+        </CRTBezel>
       </main>
 
       {/* Action footer */}
@@ -160,20 +157,20 @@ export default function TrailView() {
         {trek && (
           <button
             onClick={() => navigate('/learn')}
-            className="flex-1 max-w-xs py-2.5 bg-summit-cobalt text-white font-ui font-semibold rounded-lg hover:bg-summit-cobalt/90 transition-colors text-sm"
+            className="flex-1 max-w-xs py-2.5 bg-summit-cobalt text-catalog-cream font-ui font-semibold rounded-lg hover:bg-summit-cobalt/90 transition-colors text-sm"
           >
             Continue Trek
           </button>
         )}
         <button
           onClick={() => navigate('/chat')}
-          className="flex-1 max-w-xs py-2.5 border border-phosphor-green/30 text-phosphor-green bg-terminal-dark font-mono rounded-lg hover:border-phosphor-green/50 transition-colors text-sm"
+          className="flex-1 max-w-xs py-2.5 border border-trail-brown/40 text-catalog-cream/80 font-ui font-medium rounded-lg hover:bg-white/5 transition-colors text-sm"
         >
           Talk to the Sherpa
         </button>
         <button
           onClick={() => navigate('/notebook')}
-          className="flex-shrink-0 py-2.5 px-4 text-phosphor-green/50 font-mono text-sm hover:text-phosphor-green transition-colors"
+          className="flex-shrink-0 py-2.5 px-4 text-catalog-cream/40 font-body text-sm hover:text-catalog-cream/70 transition-colors"
         >
           Notebook
         </button>
