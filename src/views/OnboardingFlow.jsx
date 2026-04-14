@@ -19,7 +19,7 @@ const MIN_GENERATION_MS = 4000
 
 export default function OnboardingFlow() {
   const { user, signOut } = useAuth()
-  const { updateProfile } = useProfile()
+  const { profile, updateProfile } = useProfile()
   const navigate = useNavigate()
   const lineTimerRef = useRef(null)
 
@@ -167,6 +167,16 @@ export default function OnboardingFlow() {
           {/* Step 1: Arrival */}
           {step === 1 && (
             <div className="space-y-6" role="form" aria-label="Tell the Sherpa what you want to learn">
+              {/* Sherpa introduction */}
+              <div className="text-center space-y-2">
+                <p className="font-mono text-phosphor-green/80 text-sm">
+                  Meet the Sherpa - your AI learning guide
+                </p>
+                <p className="font-mono text-trail-brown/50 text-xs leading-relaxed max-w-md mx-auto">
+                  The Sherpa will build you a personalized trek (learning path) with camps (milestones) and sections (lessons). Complete them all to reach the summit.
+                </p>
+              </div>
+
               <SherpaTerminal>
                 <TypewriterText
                   text="I have been expecting someone. What skill are you here to learn? Tell me what you want to be able to do that you cannot do today."
@@ -184,7 +194,7 @@ export default function OnboardingFlow() {
                     value={skillDescription}
                     onChange={(e) => setSkillDescription(e.target.value)}
                     maxLength={500}
-                    placeholder="Make SaaS launch videos... Learn Python... Master negotiation..."
+                    placeholder="Be specific: 'Learn to edit SaaS product videos' works better than 'Learn video'"
                     className="w-full h-24 px-4 py-3 bg-terminal-dark/80 border border-trail-brown/30 rounded-md font-body text-catalog-cream placeholder-trail-brown/40 focus:outline-none focus:ring-2 focus:ring-phosphor-green/50 resize-none"
                     autoFocus
                   />
@@ -251,6 +261,10 @@ export default function OnboardingFlow() {
                       speed={25}
                     />
                   </SherpaTerminal>
+
+                  <p className="font-mono text-trail-brown/50 text-xs text-center">
+                    These questions help customize your trek to your current level. Answer honestly - there are no wrong answers.
+                  </p>
 
                   {questions.map((q, i) => (
                     <div key={i} className="space-y-2">
@@ -324,7 +338,32 @@ export default function OnboardingFlow() {
                   <TrekProposal
                     proposal={proposal}
                     onBegin={handleBeginTrek}
+                    onUpgrade={() => navigate('/settings')}
+                    onRescope={() => {
+                      // Re-generate with day_hike constraint
+                      setGenerationPhase('generating')
+                      setGenerationLineIndex(0)
+                      setProposal(null)
+                      setActivateError(null)
+                      const prereqs = questions.map((q, i) => ({
+                        question: q.question,
+                        answer: answers[i] || '',
+                      }))
+                      generateTrek({
+                        skillDescription: skillDescription.trim(),
+                        prerequisiteAnswers: prereqs,
+                        userId: user.id,
+                        userContext: { difficulty_constraint: 'day_hike' },
+                      }).then((result) => {
+                        setProposal(result)
+                        setGenerationPhase('proposal')
+                      }).catch((err) => {
+                        setGenerateError(err.message || 'Failed to re-scope.')
+                        setGenerationPhase(null)
+                      })
+                    }}
                     loading={activating}
+                    isFreeUser={profile?.subscription_tier !== 'pro'}
                   />
                 </div>
               )}

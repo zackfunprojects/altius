@@ -138,6 +138,15 @@ serve(async (req: Request) => {
     const skillDescription = validateSkillDescription(body.skill_description);
     const prerequisiteAnswers = validatePrerequisiteAnswers(body.prerequisite_answers);
 
+    // Check subscription tier to constrain difficulty
+    const { data: userProfile } = await supabase
+      .from("profiles")
+      .select("subscription_tier")
+      .eq("id", authUserId)
+      .single();
+
+    const isFreeUser = userProfile?.subscription_tier !== "pro";
+
     // Validate user_id matches authenticated user
     const requestedUserId = body.user_id;
     if (requestedUserId && requestedUserId !== authUserId) {
@@ -169,6 +178,7 @@ serve(async (req: Request) => {
             content: `A climber wants to learn: "${skillDescription}"
 ${prereqContext}
 ${priorTreksContext}
+${difficultyConstraint}
 
 Generate a complete trek structure for this skill. The trek should be a realistic, well-scoped learning path from the climber's current level to demonstrable mastery.
 

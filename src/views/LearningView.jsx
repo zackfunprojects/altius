@@ -38,6 +38,9 @@ export default function LearningView() {
   const [journalError, setJournalError] = useState(null)
   const [completing, setCompleting] = useState(false)
   const [completedExercises, setCompletedExercises] = useState(new Set())
+  const [showLearningGuide, setShowLearningGuide] = useState(() => {
+    return !localStorage.getItem('altius_learning_guide_dismissed')
+  })
 
   const { addNote } = useTrekJournal(trek?.id)
   const { responses: exerciseResponses, refetch: refetchExercises } = useExerciseResponses(displayedSection?.id)
@@ -268,6 +271,21 @@ export default function LearningView() {
         {/* Lesson panel */}
         <main className="flex-1 flex flex-col overflow-hidden">
           <div className="flex-1 overflow-y-auto px-4 sm:px-8 lg:px-12 py-6 sm:py-8">
+            {/* First-time orientation */}
+            {showLearningGuide && (
+              <div className="max-w-2xl mx-auto mb-6 p-4 bg-summit-cobalt/10 border border-summit-cobalt/20 rounded-lg relative">
+                <button
+                  onClick={() => { setShowLearningGuide(false); localStorage.setItem('altius_learning_guide_dismissed', 'true') }}
+                  className="absolute top-2 right-2 text-trail-brown/40 hover:text-ink text-xs"
+                >
+                  Dismiss
+                </button>
+                <p className="text-sm font-ui text-ink font-medium mb-1">How learning works</p>
+                <p className="text-xs font-body text-trail-brown/70 leading-relaxed pr-8">
+                  Read the lesson, complete any exercises, then click "Continue to Next Section" to advance. The trail map on the left tracks your progress through camps and sections.
+                </p>
+              </div>
+            )}
             {generating ? (
               <div className="max-w-2xl mx-auto">
                 <SherpaTerminal>
@@ -342,20 +360,23 @@ export default function LearningView() {
               <button
                 onClick={() => setJournalOpen(!journalOpen)}
                 className="px-3 py-1.5 text-sm font-ui font-medium text-trail-brown border border-trail-brown/30 rounded-md hover:bg-trail-brown/5 transition-colors"
+                title="Take notes about what you're learning"
               >
                 Journal
               </button>
               <button
                 onClick={() => setCoachingOpen(true)}
                 className="px-3 py-1.5 text-sm font-ui font-medium text-signal-orange border border-signal-orange/30 rounded-md hover:bg-signal-orange/5 transition-colors"
+                title="Share your screen for live coaching feedback (Pro)"
               >
-                OTS Coach
+                Screen Coach
               </button>
               <button
                 onClick={() => setFiresideOpen(true)}
                 className="px-3 py-1.5 text-sm font-ui font-medium text-alpine-gold border border-alpine-gold/30 rounded-md hover:bg-alpine-gold/5 transition-colors"
+                title="Talk to the Sherpa using voice"
               >
-                Fireside
+                Voice Chat
               </button>
             </div>
             {/* Section completion is handled in LessonRenderer */}

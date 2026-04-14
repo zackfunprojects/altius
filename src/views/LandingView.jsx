@@ -20,6 +20,9 @@ export default function LandingView() {
 
   const [morningQuestion, setMorningQuestion] = useState(null)
   const [showMorningQuestion, setShowMorningQuestion] = useState(false)
+  const [showFirstTimeGuide, setShowFirstTimeGuide] = useState(() => {
+    return !localStorage.getItem('altius_first_time_dismissed')
+  })
   const [showAbandonConfirm, setShowAbandonConfirm] = useState(false)
   const [abandoning, setAbandoning] = useState(false)
   const [abandonError, setAbandonError] = useState(null)
@@ -147,25 +150,44 @@ export default function LandingView() {
                 </div>
               </div>
 
+              {/* First-time guide */}
+              {showFirstTimeGuide && (
+                <div className="p-4 bg-summit-cobalt/10 border border-summit-cobalt/20 rounded-lg relative">
+                  <button
+                    onClick={() => { setShowFirstTimeGuide(false); localStorage.setItem('altius_first_time_dismissed', 'true') }}
+                    className="absolute top-2 right-2 text-trail-brown/40 hover:text-ink text-xs"
+                  >
+                    Dismiss
+                  </button>
+                  <p className="text-sm font-ui text-ink font-medium mb-1">Ready to start climbing?</p>
+                  <p className="text-xs font-body text-trail-brown/70 leading-relaxed pr-8">
+                    Click "Start next lesson" to begin learning. Your elevation goes up as you complete lessons and exercises. The Sherpa is always available if you get stuck.
+                  </p>
+                </div>
+              )}
+
               {/* Action buttons */}
               <div className="space-y-3">
                 <button
                   onClick={() => navigate('/learn')}
                   className="w-full py-3 bg-summit-cobalt text-white font-ui font-semibold rounded-lg hover:bg-summit-cobalt/90 transition-colors"
                 >
-                  Continue Trek
+                  <span className="block">Start next lesson</span>
+                  <span className="block text-xs font-normal text-white/60 mt-0.5">Continue where you left off</span>
                 </button>
                 <button
                   onClick={() => navigate('/trail')}
                   className="w-full py-3 bg-terminal-dark text-phosphor-green font-mono rounded-lg border border-phosphor-green/20 hover:border-phosphor-green/40 transition-colors"
                 >
-                  View Trail
+                  <span className="block">View Trail</span>
+                  <span className="block text-xs font-normal text-phosphor-green/50 mt-0.5">See your full learning path</span>
                 </button>
                 <button
                   onClick={() => navigate('/chat')}
                   className="w-full py-3 border border-phosphor-green/30 text-phosphor-green bg-terminal-dark font-mono rounded-lg hover:bg-terminal-dark/90 hover:border-phosphor-green/50 transition-colors"
                 >
-                  Talk to the Sherpa
+                  <span className="block">Talk to the Sherpa</span>
+                  <span className="block text-xs font-normal text-phosphor-green/50 mt-0.5">Ask questions or get help</span>
                 </button>
               </div>
 

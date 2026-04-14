@@ -159,6 +159,9 @@ export default function AuthView() {
             <p className="mt-3 font-body text-trail-brown text-lg">
               Everything worth knowing is uphill.
             </p>
+            <p className="mt-2 font-body text-trail-brown/70 text-sm max-w-xs mx-auto leading-relaxed">
+              Tell an AI guide what you want to learn. It builds a personalized curriculum, teaches interactively, and verifies mastery.
+            </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
