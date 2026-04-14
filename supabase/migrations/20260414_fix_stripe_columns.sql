@@ -1,15 +1,15 @@
--- Phase 11: Subscription fields, storage bucket, and missing indexes
+-- Fix: migration 004 failed midway. This applies all missing pieces.
 
--- Add Stripe subscription fields to profiles
+-- Stripe subscription fields on profiles
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT;
 
--- Create storage bucket for exercise file uploads
+-- Storage bucket for exercise file uploads
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('exercise-files', 'exercise-files', true)
 ON CONFLICT (id) DO NOTHING;
 
--- RLS policies for exercise-files bucket (idempotent with DO $$ blocks)
+-- RLS policies for exercise-files bucket (idempotent)
 DO $$ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies WHERE policyname = 'Users can upload own exercise files'
@@ -33,15 +33,7 @@ DO $$ BEGIN
   END IF;
 END $$;
 
--- Missing indexes identified in audit
-CREATE INDEX IF NOT EXISTS idx_responses_section_exercise
-ON exercise_responses(section_id, exercise_index);
-
-CREATE INDEX IF NOT EXISTS idx_journal_camp
-ON trek_journal(camp_id, created_at DESC);
-
 -- Atomic elevation increment fallback RPC
--- Used when award_elevation RPC doesn't exist or fails
 CREATE OR REPLACE FUNCTION increment_elevation_fallback(p_user_id UUID, p_delta INTEGER)
 RETURNS INTEGER AS $$
 DECLARE
