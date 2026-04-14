@@ -147,16 +147,16 @@ export default function OnboardingFlow() {
   }, [proposal, expeditionOrigin, skillDescription, updateProfile, navigate])
 
   return (
-    <div className="min-h-screen bg-terminal-dark flex flex-col crt-scanlines crt-vignette">
+    <div className="min-h-screen bg-catalog-cream flex flex-col">
       <PageTitle title="Onboarding" />
       {/* Step indicator + sign out */}
       <div className="px-4 sm:px-6 pt-6 flex items-center justify-between" role="status" aria-live="polite">
-        <p className="font-mono text-trail-brown/50 text-xs" aria-label={`Step ${step} of 3`}>
+        <p className="font-mono text-trail-brown text-xs" aria-label={`Step ${step} of 3`}>
           {step} / 3
         </p>
         <button
           onClick={async () => { await signOut(); navigate('/auth') }}
-          className="font-mono text-trail-brown/40 text-xs hover:text-catalog-cream transition-colors"
+          className="font-mono text-trail-brown text-xs hover:text-ink transition-colors"
         >
           Sign Out
         </button>
@@ -169,11 +169,11 @@ export default function OnboardingFlow() {
             <div className="space-y-6" role="form" aria-label="Tell the Sherpa what you want to learn">
               {/* Sherpa introduction */}
               <div className="text-center space-y-2">
-                <p className="font-mono text-phosphor-green/80 text-sm">
-                  Meet the Sherpa - your AI learning guide
+                <p className="font-display text-xl text-ink">
+                  Meet the Sherpa
                 </p>
-                <p className="font-mono text-trail-brown/50 text-xs leading-relaxed max-w-md mx-auto">
-                  The Sherpa will build you a personalized trek (learning path) with camps (milestones) and sections (lessons). Complete them all to reach the summit.
+                <p className="font-body text-sm text-trail-brown leading-relaxed max-w-md mx-auto">
+                  Your AI learning guide. The Sherpa will build you a personalized trek (learning path) with camps (milestones) and sections (lessons). Complete them all to reach the summit.
                 </p>
               </div>
 
@@ -195,7 +195,7 @@ export default function OnboardingFlow() {
                     onChange={(e) => setSkillDescription(e.target.value)}
                     maxLength={500}
                     placeholder="Be specific: 'Learn to edit SaaS product videos' works better than 'Learn video'"
-                    className="w-full h-24 px-4 py-3 bg-terminal-dark/80 border border-trail-brown/30 rounded-md font-body text-catalog-cream placeholder-trail-brown/40 focus:outline-none focus:ring-2 focus:ring-phosphor-green/50 resize-none"
+                    className="w-full h-24 px-4 py-3 bg-white border border-trail-brown/30 rounded-md font-body text-ink placeholder-trail-brown/50 focus:outline-none focus:ring-2 focus:ring-summit-cobalt/50 resize-none"
                     autoFocus
                   />
                 </div>
@@ -210,7 +210,7 @@ export default function OnboardingFlow() {
                     onChange={(e) => setExpeditionOrigin(e.target.value)}
                     maxLength={500}
                     placeholder="Why does this matter to you? (optional)"
-                    className="w-full h-16 px-4 py-3 bg-terminal-dark/80 border border-trail-brown/20 rounded-md font-body text-sm text-catalog-cream placeholder-trail-brown/30 focus:outline-none focus:ring-2 focus:ring-phosphor-green/50 resize-none"
+                    className="w-full h-16 px-4 py-3 bg-white border border-trail-brown/30 rounded-md font-body text-sm text-ink placeholder-trail-brown/50 focus:outline-none focus:ring-2 focus:ring-summit-cobalt/50 resize-none"
                   />
                 </div>
 
@@ -246,7 +246,7 @@ export default function OnboardingFlow() {
                   </SherpaTerminal>
                   <button
                     onClick={() => { setStep(1); setInterviewError(null) }}
-                    className="text-sm font-ui text-trail-brown/60 hover:text-catalog-cream transition-colors focus:outline-none focus:underline"
+                    className="text-sm font-ui text-trail-brown hover:text-ink transition-colors focus:outline-none focus:underline"
                   >
                     Go back
                   </button>
@@ -262,7 +262,7 @@ export default function OnboardingFlow() {
                     />
                   </SherpaTerminal>
 
-                  <p className="font-mono text-trail-brown/50 text-xs text-center">
+                  <p className="font-body text-sm text-trail-brown text-center">
                     These questions help customize your trek to your current level. Answer honestly - there are no wrong answers.
                   </p>
 
@@ -270,9 +270,9 @@ export default function OnboardingFlow() {
                     <div key={i} className="space-y-2">
                       <label
                         htmlFor={`answer-${i}`}
-                        className="block bg-terminal-dark/60 rounded px-4 py-3 border-l-2 border-summit-cobalt"
+                        className="block bg-white rounded px-4 py-3 border-l-2 border-summit-cobalt"
                       >
-                        <span className="font-mono text-phosphor-green/80 text-sm">
+                        <span className="font-body text-ink text-sm">
                           {q.question}
                         </span>
                       </label>
@@ -284,7 +284,7 @@ export default function OnboardingFlow() {
                           setAnswers((prev) => ({ ...prev, [i]: e.target.value }))
                         }
                         placeholder="Your answer..."
-                        className="w-full px-4 py-2.5 bg-terminal-dark/80 border border-trail-brown/30 rounded-md font-body text-catalog-cream placeholder-trail-brown/40 focus:outline-none focus:ring-2 focus:ring-phosphor-green/50"
+                        className="w-full px-4 py-2.5 bg-white border border-trail-brown/30 rounded-md font-body text-ink placeholder-trail-brown/50 focus:outline-none focus:ring-2 focus:ring-summit-cobalt/50"
                       />
                     </div>
                   ))}
@@ -381,7 +381,7 @@ export default function OnboardingFlow() {
                       setGenerateError(null)
                       setGenerationPhase(null)
                     }}
-                    className="text-sm font-ui text-trail-brown/60 hover:text-catalog-cream transition-colors focus:outline-none focus:underline"
+                    className="text-sm font-ui text-trail-brown hover:text-ink transition-colors focus:outline-none focus:underline"
                   >
                     Go back
                   </button>
