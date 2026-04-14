@@ -37,14 +37,20 @@ export function useProfile() {
     fetch()
 
     // Real-time subscription for profile changes (elevation updates, etc.)
-    channel = supabase
-      .channel(`profile:${user.id}`)
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${user.id}` },
-        (payload) => setProfile(payload.new)
-      )
-      .subscribe()
+    // Use unique channel name to avoid conflicts on re-render (StrictMode double-invoke)
+    const channelName = `profile:${user.id}:${Date.now()}`
+    try {
+      channel = supabase
+        .channel(channelName)
+        .on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${user.id}` },
+          (payload) => { if (!cancelled) setProfile(payload.new) }
+        )
+        .subscribe()
+    } catch {
+      // Channel creation can fail in edge cases - profile still works without realtime
+    }
 
     return () => {
       cancelled = true

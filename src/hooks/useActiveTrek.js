@@ -77,21 +77,27 @@ export function useActiveTrek() {
     if (!user) return
 
     // Subscribe to trek and section changes scoped to this user
-    const channel = supabase
-      .channel(`active-trek:${user.id}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'treks', filter: `user_id=eq.${user.id}` },
-        () => fetch()
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'trail_sections', filter: `user_id=eq.${user.id}` },
-        () => fetch()
-      )
-      .subscribe()
+    // Unique channel name avoids StrictMode double-invoke conflicts
+    let channel
+    try {
+      channel = supabase
+        .channel(`active-trek:${user.id}:${Date.now()}`)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'treks', filter: `user_id=eq.${user.id}` },
+          () => fetch()
+        )
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'trail_sections', filter: `user_id=eq.${user.id}` },
+          () => fetch()
+        )
+        .subscribe()
+    } catch {
+      // Channel creation can fail - data still loads via initial fetch
+    }
 
-    return () => supabase.removeChannel(channel)
+    return () => { if (channel) supabase.removeChannel(channel) }
   }, [fetch, user])
 
   return { trek, camps, currentSection, loading, error, refetch: fetch }
