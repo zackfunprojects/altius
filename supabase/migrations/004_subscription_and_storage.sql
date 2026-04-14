@@ -9,26 +9,29 @@ INSERT INTO storage.buckets (id, name, public)
 VALUES ('exercise-files', 'exercise-files', true)
 ON CONFLICT (id) DO NOTHING;
 
--- RLS policy for exercise-files bucket: users can upload to their own path
-CREATE POLICY "Users can upload own exercise files"
-ON storage.objects FOR INSERT
-WITH CHECK (
-  bucket_id = 'exercise-files'
-  AND (storage.foldername(name))[1] = 'exercise-files'
-  AND (storage.foldername(name))[2] = auth.uid()::text
-);
+-- RLS policies for exercise-files bucket (idempotent with DO $$ blocks)
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE policyname = 'Users can upload own exercise files'
+  ) THEN
+    CREATE POLICY "Users can upload own exercise files"
+    ON storage.objects FOR INSERT
+    WITH CHECK (
+      bucket_id = 'exercise-files'
+      AND (storage.foldername(name))[2] = auth.uid()::text
+    );
+  END IF;
+END $$;
 
-CREATE POLICY "Users can read own exercise files"
-ON storage.objects FOR SELECT
-USING (
-  bucket_id = 'exercise-files'
-  AND (storage.foldername(name))[2] = auth.uid()::text
-);
-
--- Public read for exercise files (needed for AI evaluation)
-CREATE POLICY "Public read for exercise files"
-ON storage.objects FOR SELECT
-USING (bucket_id = 'exercise-files');
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE policyname = 'Public read for exercise files'
+  ) THEN
+    CREATE POLICY "Public read for exercise files"
+    ON storage.objects FOR SELECT
+    USING (bucket_id = 'exercise-files');
+  END IF;
+END $$;
 
 -- Missing indexes identified in audit
 CREATE INDEX IF NOT EXISTS idx_responses_section_exercise

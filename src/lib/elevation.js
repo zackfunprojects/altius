@@ -28,40 +28,42 @@ export async function awardElevation({ userId, delta, sourceType, sourceId, trek
     return { delta, totalAfter: rpcResult }
   }
 
-  // Fallback: use SQL expression for atomic increment to avoid read-modify-write race
-  // Update profile elevation atomically using raw SQL increment
-  const { data: updatedProfile, error: updateError } = await supabase.rpc('increment_elevation_fallback', {
+  // Fallback: atomic increment via RPC that handles both profile update + log insert
+  const { data: updatedProfile, error: rpcFallbackError } = await supabase.rpc('increment_elevation_fallback', {
     p_user_id: userId,
     p_delta: delta,
   })
 
-  // If the RPC doesn't exist, fall back to sequential (last resort)
-  let totalAfter
-  if (updateError) {
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('current_elevation')
-      .eq('id', userId)
-      .single()
-
-    if (profileError) throw profileError
-    totalAfter = profile.current_elevation + delta
-
-    const { error: profUpdateError } = await supabase
-      .from('profiles')
-      .update({
-        current_elevation: totalAfter,
-        last_active: new Date().toISOString(),
-      })
-      .eq('id', userId)
-
-    if (profUpdateError) throw profUpdateError
-  } else {
-    totalAfter = updatedProfile
+  if (!rpcFallbackError) {
+    // RPC succeeded - insert log entry (non-critical, profile is already updated)
+    await supabase.from('elevation_log').insert({
+      user_id: userId,
+      delta,
+      total_after: updatedProfile,
+      source_type: sourceType,
+      source_id: sourceId || null,
+      trek_id: trekId || null,
+    })
+    return { delta, totalAfter: updatedProfile }
   }
 
-  // Insert elevation log entry
-  const { error: insertError } = await supabase.from('elevation_log').insert({
+  // Last resort: sequential (accepts minor race risk over total failure)
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('current_elevation')
+    .eq('id', userId)
+    .single()
+
+  if (profileError) throw profileError
+
+  const totalAfter = profile.current_elevation + delta
+
+  await supabase
+    .from('profiles')
+    .update({ current_elevation: totalAfter, last_active: new Date().toISOString() })
+    .eq('id', userId)
+
+  await supabase.from('elevation_log').insert({
     user_id: userId,
     delta,
     total_after: totalAfter,
@@ -69,8 +71,6 @@ export async function awardElevation({ userId, delta, sourceType, sourceId, trek
     source_id: sourceId || null,
     trek_id: trekId || null,
   })
-
-  if (insertError) throw insertError
 
   return { delta, totalAfter }
 }

@@ -54,7 +54,7 @@ serve(async (req: Request) => {
 
     let customerId = profile.stripe_customer_id;
 
-    // Create Stripe customer if needed
+    // Create Stripe customer if needed (use conditional update to prevent race)
     if (!customerId) {
       const customer = await stripe.customers.create({
         email: user.email,
@@ -62,18 +62,36 @@ serve(async (req: Request) => {
         metadata: { supabase_user_id: authUserId },
       });
 
-      customerId = customer.id;
-
-      // Store customer ID on profile
-      await supabase
+      // Only store if still null (prevents race with concurrent requests)
+      const { data: updated } = await supabase
         .from("profiles")
-        .update({ stripe_customer_id: customerId })
-        .eq("id", authUserId);
+        .update({ stripe_customer_id: customer.id })
+        .eq("id", authUserId)
+        .is("stripe_customer_id", null)
+        .select("stripe_customer_id")
+        .single();
+
+      if (updated?.stripe_customer_id === customer.id) {
+        customerId = customer.id;
+      } else {
+        // Another request won the race - use their customer ID
+        const { data: refreshed } = await supabase
+          .from("profiles")
+          .select("stripe_customer_id")
+          .eq("id", authUserId)
+          .single();
+        customerId = refreshed?.stripe_customer_id || customer.id;
+      }
     }
 
-    // Parse request body for optional parameters
+    // Parse request body and validate origin against allowlist
     const body = await req.json().catch(() => ({}));
-    const origin = body.origin || "https://altius.vercel.app";
+    const ALLOWED_ORIGINS = [
+      "https://altius.vercel.app",
+      "http://localhost:5173",
+      "http://localhost:3000",
+    ];
+    const origin = ALLOWED_ORIGINS.includes(body.origin) ? body.origin : ALLOWED_ORIGINS[0];
 
     // Create Stripe Checkout session
     const session = await stripe.checkout.sessions.create({

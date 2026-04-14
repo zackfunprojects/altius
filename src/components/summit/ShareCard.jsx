@@ -9,6 +9,16 @@ export default function ShareCard({ entry }) {
 
   const shareText = `I just summited "${entry.skill_name}" on Altius - ${entry.key_concepts?.length || 0} concepts mastered on Expedition Day ${entry.summit_date}. Everything worth knowing is uphill.`
 
+  const copyToClipboard = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(shareText)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // Clipboard also failed - ignore
+    }
+  }, [shareText])
+
   const handleShare = useCallback(async () => {
     if (navigator.share) {
       try {
@@ -18,19 +28,13 @@ export default function ShareCard({ entry }) {
           url: 'https://altius.vercel.app',
         })
       } catch {
-        // User cancelled share - ignore
+        // Share failed or cancelled - fall back to clipboard
+        await copyToClipboard()
       }
     } else {
-      // Clipboard fallback
-      try {
-        await navigator.clipboard.writeText(shareText)
-        setCopied(true)
-        setTimeout(() => setCopied(false), 2000)
-      } catch {
-        // Clipboard failed - ignore
-      }
+      await copyToClipboard()
     }
-  }, [entry, shareText])
+  }, [entry, shareText, copyToClipboard])
 
   return (
     <button

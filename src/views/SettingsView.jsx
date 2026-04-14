@@ -53,8 +53,10 @@ export default function SettingsView() {
   }, [upgrading])
 
   const handleSignOut = useCallback(async () => {
-    await signOut()
-    navigate('/auth')
+    const { error: signOutError } = await signOut()
+    if (!signOutError) {
+      navigate('/auth')
+    }
   }, [signOut, navigate])
 
   return (

@@ -379,34 +379,22 @@ export async function completeSection(sectionId) {
     trekId: section.trek_id,
   })
 
-  // Unlock next section in this camp
-  try {
-    const { data: nextSection } = await supabase
+  // Unlock next section in this camp (progression-critical - must not swallow errors)
+  const { data: nextSection } = await supabase
+    .from('trail_sections')
+    .select('id')
+    .eq('camp_id', section.camp_id)
+    .eq('section_number', section.section_number + 1)
+    .maybeSingle()
+
+  if (nextSection) {
+    const { error: unlockError } = await supabase
       .from('trail_sections')
-      .select('id')
-      .eq('camp_id', section.camp_id)
-      .eq('section_number', section.section_number + 1)
-      .maybeSingle()
+      .update({ status: 'active' })
+      .eq('id', nextSection.id)
+      .eq('status', 'locked')
 
-    if (nextSection) {
-      const { error: unlockError } = await supabase
-        .from('trail_sections')
-        .update({ status: 'active' })
-        .eq('id', nextSection.id)
-        .eq('status', 'locked')
-
-      if (unlockError) {
-        logWarn('section-complete', 'Failed to unlock next section', {
-          sectionId: nextSection.id,
-          error: unlockError.message,
-        })
-      }
-    }
-  } catch (err) {
-    logWarn('section-complete', 'Error unlocking next section', {
-      campId: section.camp_id,
-      error: err.message,
-    })
+    if (unlockError) throw unlockError
   }
 
   await checkCampComplete(section.camp_id)
@@ -473,7 +461,7 @@ export async function checkCampComplete(campId) {
     trekId: camp.trek_id,
   })
 
-  // Fire camp_reached event (non-blocking - don't fail camp completion if event fails)
+  // Fire camp_reached event (non-blocking - event logging is not progression-critical)
   try {
     await fireLifecycleEvent(camp.user_id, camp.trek_id, 'camp_reached',
       `Camp reached`,
@@ -483,15 +471,8 @@ export async function checkCampComplete(campId) {
     logWarn('camp-complete', 'Failed to fire camp_reached event', { error: err.message })
   }
 
-  try {
-    await unlockNextCamp(camp.trek_id, camp.camp_number)
-  } catch (err) {
-    logWarn('camp-complete', 'Failed to unlock next camp', {
-      trekId: camp.trek_id,
-      campNumber: camp.camp_number,
-      error: err.message,
-    })
-  }
+  // Unlock next camp (progression-critical - must throw on failure)
+  await unlockNextCamp(camp.trek_id, camp.camp_number)
 
   return true
 }

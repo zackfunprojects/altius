@@ -36,8 +36,9 @@ function formatTimestamp(ts) {
 export default function ExpeditionLogView() {
   const navigate = useNavigate()
   const { profile } = useProfile()
-  const { events } = useExpeditionEvents()
-  const { entries: elevationEntries } = useElevationLog()
+  const { events, loading: eventsLoading } = useExpeditionEvents()
+  const { entries: elevationEntries, loading: elevationLoading } = useElevationLog()
+  const loading = eventsLoading || elevationLoading
 
   // Merge events and elevation entries into a unified chronological feed
   const feed = useMemo(() => {
@@ -98,7 +99,11 @@ export default function ExpeditionLogView() {
       </div>
 
       <main className="flex-1 px-4 sm:px-6 py-4 max-w-2xl mx-auto w-full overflow-y-auto">
-        {feed.length === 0 ? (
+        {loading ? (
+          <div className="py-8 text-center">
+            <p className="font-mono text-phosphor-green/50 text-sm">Loading expedition log...</p>
+          </div>
+        ) : feed.length === 0 ? (
           <div className="py-8">
             <SherpaTerminal>
               {'>'} No entries yet. Start a trek and the log will fill itself.
