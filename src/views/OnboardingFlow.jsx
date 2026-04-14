@@ -39,7 +39,6 @@ export default function OnboardingFlow() {
   const navigate = useNavigate()
   const lineTimerRef = useRef(null)
 
-  const isReturningUser = !!profile?.expedition_origin
   const [step, setStep] = useState(1)
 
   // Step 1 state
@@ -148,15 +147,13 @@ export default function OnboardingFlow() {
     try {
       await activateTrek(proposal.trek_id)
 
-      // Set expedition_origin only if not already set (first-time onboarding)
-      if (!profile?.expedition_origin) {
-        try {
-          await updateProfile({
-            expedition_origin: expeditionOrigin.trim() || skillDescription.trim(),
-          })
-        } catch {
-          // Profile update is non-critical
-        }
+      // Set expedition_origin (first-time onboarding only - returning users use NewTrekFlow)
+      try {
+        await updateProfile({
+          expedition_origin: expeditionOrigin.trim() || skillDescription.trim(),
+        })
+      } catch {
+        // Profile update is non-critical
       }
 
       // Use window.location for a clean navigation to avoid stale state
@@ -165,7 +162,7 @@ export default function OnboardingFlow() {
       setActivateError(err.message || 'Could not start the trek. Please try again.')
       setActivating(false)
     }
-  }, [proposal, expeditionOrigin, skillDescription, updateProfile, navigate, profile?.expedition_origin])
+  }, [proposal, expeditionOrigin, skillDescription, updateProfile, navigate])
 
   return (
     <div className="min-h-screen bg-catalog-cream flex flex-col">
@@ -190,10 +187,7 @@ export default function OnboardingFlow() {
             <div className="space-y-6" role="form" aria-label="Tell the Sherpa what you want to learn">
               <SherpaSpeech>
                 <TypewriterText
-                  text={isReturningUser
-                    ? "Ready for another climb? Tell me what skill you want to learn next."
-                    : "I am the Sherpa - your guide on this mountain. Tell me what you want to learn, and I will build you a personalized path to get there. Each path has camps (milestones) with sections (lessons). Complete them all to reach the summit. So - what skill are you here for?"
-                  }
+                  text="I am the Sherpa - your guide on this mountain. Tell me what you want to learn, and I will build you a personalized path to get there. Each path has camps (milestones) with sections (lessons). Complete them all to reach the summit. So - what skill are you here for?"
                   speed={20}
                 />
               </SherpaSpeech>

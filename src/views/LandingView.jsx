@@ -10,13 +10,14 @@ import WordMark from '../components/brand/WordMark'
 import ElevationCounter from '../components/brand/ElevationCounter'
 import DifficultyBadge from '../components/brand/DifficultyBadge'
 import MorningQuestion from '../components/MorningQuestion'
+import NewTrekFlow from '../components/trek/NewTrekFlow'
 import PageTitle from '../components/ui/PageTitle'
 
 export default function LandingView() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { profile } = useProfile()
-  const { trek, camps, loading: trekLoading, error: trekError } = useActiveTrek()
+  const { trek, camps, loading: trekLoading, error: trekError, refetch: refetchTrek } = useActiveTrek()
 
   const [morningQuestion, setMorningQuestion] = useState(null)
   const [showMorningQuestion, setShowMorningQuestion] = useState(false)
@@ -228,29 +229,7 @@ export default function LandingView() {
               </div>
             </div>
           ) : (
-            <div className="text-center space-y-6">
-              <div>
-                <h1 className="font-display text-3xl sm:text-4xl text-ink mb-4">
-                  {profile?.total_treks_completed > 0 ? 'What will you learn next?' : 'Welcome, Climber'}
-                </h1>
-                <p className="font-body text-lg text-trail-brown">
-                  {profile?.total_treks_completed > 0 ? 'Pick your next skill and the Sherpa will map the trail.' : 'No active trek. The mountain is waiting.'}
-                </p>
-              </div>
-              <button
-                onClick={() => navigate('/onboarding')}
-                className="w-full py-3 bg-summit-cobalt text-white font-ui font-semibold rounded-lg hover:bg-summit-cobalt/90 transition-colors"
-              >
-                <span className="block">Start a New Trek</span>
-                <span className="block text-xs font-normal text-white/60 mt-0.5">Tell the Sherpa what you want to learn</span>
-              </button>
-              <button
-                onClick={() => navigate('/chat')}
-                className="w-full py-3 border border-phosphor-green/30 text-phosphor-green bg-terminal-dark font-mono rounded-lg hover:bg-terminal-dark/90 hover:border-phosphor-green/50 transition-colors"
-              >
-                Talk to the Sherpa
-              </button>
-            </div>
+            <NewTrekFlow onComplete={refetchTrek} profile={profile} />
           )}
           {/* Trek Notebook link - always visible */}
           <div className="mt-6 text-center">
