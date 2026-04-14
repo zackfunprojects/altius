@@ -87,7 +87,7 @@ serve(async (req: Request) => {
     // Parse request body and validate origin against allowlist
     const body = await req.json().catch(() => ({}));
     const ALLOWED_ORIGINS = [
-      "https://altius.vercel.app",
+      "https://altius-navy.vercel.app",
       "http://localhost:5173",
       "http://localhost:3000",
     ];
@@ -98,6 +98,7 @@ serve(async (req: Request) => {
       customer: customerId,
       mode: "subscription",
       line_items: [{ price: proPriceId, quantity: 1 }],
+      allow_promotion_codes: true,
       success_url: `${origin}/settings?upgraded=true`,
       cancel_url: `${origin}/settings`,
       metadata: { supabase_user_id: authUserId },
