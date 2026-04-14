@@ -10,7 +10,7 @@ import TopoBorder from '../components/brand/TopoBorder'
 
 export default function LearningScreen({ navigation }) {
   const { profile } = useProfile()
-  const { trek, currentSection, refetch } = useActiveTrek()
+  const { trek, currentSection, loading: trekLoading, refetch } = useActiveTrek()
   const [lessonContent, setLessonContent] = useState(null)
   const [generating, setGenerating] = useState(false)
   const [completing, setCompleting] = useState(false)
@@ -62,7 +62,11 @@ export default function LearningScreen({ navigation }) {
       />
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
-        {generating ? (
+        {trekLoading ? (
+          <View style={styles.center}>
+            <Text style={styles.loadingText}>&gt; Loading trek...</Text>
+          </View>
+        ) : generating ? (
           <View style={styles.center}>
             <Text style={styles.loadingText}>&gt; Preparing your trail...</Text>
             <ActivityIndicator color={colors.phosphorGreen} style={{ marginTop: 12 }} />
@@ -70,7 +74,7 @@ export default function LearningScreen({ navigation }) {
         ) : error ? (
           <View style={styles.center}>
             <Text style={styles.errorText}>{error}</Text>
-            <TouchableOpacity style={styles.retryButton} onPress={() => refetch()}>
+            <TouchableOpacity style={styles.retryButton} onPress={() => { setError(null); setLessonContent(null) }}>
               <Text style={styles.retryButtonText}>Retry</Text>
             </TouchableOpacity>
           </View>

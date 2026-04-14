@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet } from 'react-native'
 import { useAuth } from '../context/AuthContext'
 import { useProfile } from '../hooks/useProfile'
@@ -11,8 +11,15 @@ import TopoBorder from '../components/brand/TopoBorder'
 export default function SettingsScreen({ navigation }) {
   const { user, signOut } = useAuth()
   const { profile, updateProfile } = useProfile()
-  const [displayName, setDisplayName] = useState(profile?.display_name || '')
+  const [displayName, setDisplayName] = useState('')
   const [saving, setSaving] = useState(false)
+
+  // Sync display name when profile loads asynchronously
+  useEffect(() => {
+    if (profile?.display_name && !displayName) {
+      setDisplayName(profile.display_name)
+    }
+  }, [profile?.display_name, displayName])
 
   const sub = getSubscriptionStatus(profile)
   const expeditionDay = getExpeditionDay(profile?.created_at)

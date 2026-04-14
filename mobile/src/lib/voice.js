@@ -8,7 +8,11 @@ import * as FileSystem from 'expo-file-system'
 let recording = null
 
 export async function startRecording() {
-  await Audio.requestPermissionsAsync()
+  const { granted } = await Audio.requestPermissionsAsync()
+  if (!granted) {
+    throw new Error('Microphone permission is required for voice features.')
+  }
+
   await Audio.setAudioModeAsync({
     allowsRecordingIOS: true,
     playsInSilentModeIOS: true,
@@ -23,7 +27,13 @@ export async function startRecording() {
 
 export async function stopRecording() {
   if (!recording) return null
-  await recording.stopAndUnloadAsync()
+
+  try {
+    await recording.stopAndUnloadAsync()
+  } catch {
+    // Already stopped - safe to proceed
+  }
+
   await Audio.setAudioModeAsync({ allowsRecordingIOS: false })
 
   const uri = recording.getURI()
@@ -32,6 +42,7 @@ export async function stopRecording() {
 }
 
 export async function audioFileToBase64(uri) {
+  if (!uri) throw new Error('No audio URI provided')
   const base64 = await FileSystem.readAsStringAsync(uri, {
     encoding: FileSystem.EncodingType.Base64,
   })
@@ -39,24 +50,30 @@ export async function audioFileToBase64(uri) {
 }
 
 export async function playAudioBase64(base64) {
-  const fileUri = FileSystem.cacheDirectory + 'sherpa_response.mp3'
+  if (!base64) return
+
+  const fileUri = FileSystem.cacheDirectory + `sherpa_response_${Date.now()}.mp3`
   await FileSystem.writeAsStringAsync(fileUri, base64, {
     encoding: FileSystem.EncodingType.Base64,
   })
 
   const { sound } = await Audio.Sound.createAsync({ uri: fileUri })
-  await sound.playAsync()
 
-  return new Promise((resolve) => {
-    sound.setOnPlaybackStatusUpdate((status) => {
-      if (status.didJustFinish) {
-        sound.unloadAsync()
-        resolve()
-      }
+  try {
+    await sound.playAsync()
+
+    await new Promise((resolve) => {
+      sound.setOnPlaybackStatusUpdate((status) => {
+        if (status.didJustFinish) {
+          resolve()
+        }
+      })
     })
-  })
+  } finally {
+    await sound.unloadAsync()
+  }
 }
 
 export function isRecordingSupported() {
-  return true // expo-av always supports recording on native
+  return true
 }

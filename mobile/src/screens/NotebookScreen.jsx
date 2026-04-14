@@ -7,7 +7,7 @@ import TopoBorder from '../components/brand/TopoBorder'
 
 export default function NotebookScreen() {
   const { profile } = useProfile()
-  const { entries, loading } = useTrekNotebook()
+  const { entries, loading, error } = useTrekNotebook()
 
   return (
     <View style={styles.container}>
@@ -16,6 +16,10 @@ export default function NotebookScreen() {
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         {loading ? (
           <Text style={styles.loading}>&gt; Loading notebook...</Text>
+        ) : error ? (
+          <View style={styles.empty}>
+            <Text style={styles.emptyText}>&gt; Could not load notebook.</Text>
+          </View>
         ) : entries.length === 0 ? (
           <View style={styles.empty}>
             <Text style={styles.emptyText}>&gt; No summits yet.</Text>

@@ -1,16 +1,21 @@
+import { Linking } from 'react-native'
 import { supabase } from './supabase'
 
 /**
- * Creates a Stripe Checkout session for Pro subscription.
- * Returns the checkout URL to redirect to.
+ * Creates a Stripe Checkout session and opens it in the system browser.
+ * Mobile version - no window.location available.
  */
-export async function createCheckoutSession(origin) {
+export async function createCheckoutSession() {
   const { data, error } = await supabase.functions.invoke('stripe-checkout', {
-    body: { origin: origin || window.location.origin },
+    body: { origin: 'https://altius.vercel.app' },
   })
 
   if (error) throw error
   if (data?.error) throw new Error(data.error)
+
+  if (data.checkout_url) {
+    await Linking.openURL(data.checkout_url)
+  }
 
   return data.checkout_url
 }

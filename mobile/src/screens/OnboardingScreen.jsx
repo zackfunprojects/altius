@@ -59,12 +59,18 @@ export default function OnboardingScreen({ navigation }) {
   const handleBegin = useCallback(async () => {
     if (!trekData?.trek_id || loading) return
     setLoading(true)
+    setError(null)
     try {
       await activateTrek(trekData.trek_id)
-      await updateProfile({
-        expedition_origin: skill.trim(),
-        expedition_vision: 'Mastery',
-      })
+      // Profile update is non-critical - don't fail the whole flow
+      try {
+        await updateProfile({
+          expedition_origin: skill.trim(),
+          expedition_vision: 'Mastery',
+        })
+      } catch {
+        // Trek is active, proceed even if profile update fails
+      }
       navigation.replace('Main')
     } catch (err) {
       setError(err.message)
