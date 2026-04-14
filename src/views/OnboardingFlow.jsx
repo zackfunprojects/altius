@@ -4,10 +4,23 @@ import { useAuth } from '../context/AuthContext'
 import { useProfile } from '../hooks/useProfile'
 import { interviewForSkill, generateTrek } from '../lib/sherpa'
 import { activateTrek } from '../lib/trek'
-import SherpaTerminal from '../components/brand/SherpaTerminal'
+import { createCheckoutSession } from '../lib/stripe'
 import TypewriterText from '../components/ui/TypewriterText'
 import TrekProposal from '../components/trek/TrekProposal'
 import PageTitle from '../components/ui/PageTitle'
+
+function SherpaSpeech({ children }) {
+  return (
+    <div className="bg-white rounded-lg border border-summit-cobalt/15 p-5 shadow-sm">
+      <div className="flex items-start gap-3">
+        <span className="text-summit-cobalt text-lg leading-none mt-0.5">&#9650;</span>
+        <div className="font-body text-ink text-sm leading-relaxed">
+          {children}
+        </div>
+      </div>
+    </div>
+  )
+}
 
 const GENERATION_LINES = [
   'The Sherpa is reading the terrain...',
@@ -167,22 +180,12 @@ export default function OnboardingFlow() {
           {/* Step 1: Arrival */}
           {step === 1 && (
             <div className="space-y-6" role="form" aria-label="Tell the Sherpa what you want to learn">
-              {/* Sherpa introduction */}
-              <div className="text-center space-y-2">
-                <p className="font-display text-xl text-ink">
-                  Meet the Sherpa
-                </p>
-                <p className="font-body text-sm text-trail-brown leading-relaxed max-w-md mx-auto">
-                  Your AI learning guide. The Sherpa will build you a personalized trek (learning path) with camps (milestones) and sections (lessons). Complete them all to reach the summit.
-                </p>
-              </div>
-
-              <SherpaTerminal>
+              <SherpaSpeech>
                 <TypewriterText
-                  text="I have been expecting someone. What skill are you here to learn? Tell me what you want to be able to do that you cannot do today."
-                  speed={25}
+                  text="I am the Sherpa - your guide on this mountain. Tell me what you want to learn, and I will build you a personalized path to get there. Each path has camps (milestones) with sections (lessons). Complete them all to reach the summit. So - what skill are you here for?"
+                  speed={20}
                 />
-              </SherpaTerminal>
+              </SherpaSpeech>
 
               <div className="space-y-4">
                 <div>
@@ -229,21 +232,21 @@ export default function OnboardingFlow() {
           {step === 2 && (
             <div className="space-y-6" role="form" aria-label="Prerequisite interview">
               {interviewLoading && (
-                <SherpaTerminal>
+                <SherpaSpeech>
                   <TypewriterText
                     text="The Sherpa is considering your path..."
                     speed={30}
                   />
-                </SherpaTerminal>
+                </SherpaSpeech>
               )}
 
               {interviewError && (
                 <div className="space-y-4">
-                  <SherpaTerminal>
+                  <SherpaSpeech>
                     <p className="text-signal-orange" role="alert">
                       {interviewError}
                     </p>
-                  </SherpaTerminal>
+                  </SherpaSpeech>
                   <button
                     onClick={() => { setStep(1); setInterviewError(null) }}
                     className="text-sm font-ui text-trail-brown hover:text-ink transition-colors focus:outline-none focus:underline"
@@ -255,12 +258,12 @@ export default function OnboardingFlow() {
 
               {!interviewLoading && !interviewError && questions.length > 0 && (
                 <div className="space-y-6">
-                  <SherpaTerminal>
+                  <SherpaSpeech>
                     <TypewriterText
                       text="Before I map the trail, I need to know what you are already carrying."
                       speed={25}
                     />
-                  </SherpaTerminal>
+                  </SherpaSpeech>
 
                   <p className="font-body text-sm text-trail-brown text-center">
                     These questions help customize your trek to your current level. Answer honestly - there are no wrong answers.
@@ -304,7 +307,7 @@ export default function OnboardingFlow() {
           {step === 3 && (
             <div className="space-y-6" aria-label="Trek generation">
               {generationPhase === 'generating' && (
-                <SherpaTerminal>
+                <SherpaSpeech>
                   <div className="space-y-2" role="status" aria-live="polite">
                     {GENERATION_LINES.slice(0, generationLineIndex + 1).map(
                       (line, i) => (
@@ -318,27 +321,33 @@ export default function OnboardingFlow() {
                       )
                     )}
                   </div>
-                </SherpaTerminal>
+                </SherpaSpeech>
               )}
 
               {generationPhase === 'proposal' && proposal && (
                 <div className="space-y-4">
-                  <SherpaTerminal>
+                  <SherpaSpeech>
                     <p>
                       The trail is mapped. Here is your expedition.
                     </p>
-                  </SherpaTerminal>
+                  </SherpaSpeech>
 
                   {activateError && (
-                    <SherpaTerminal>
+                    <SherpaSpeech>
                       <p className="text-signal-orange" role="alert">{activateError}</p>
-                    </SherpaTerminal>
+                    </SherpaSpeech>
                   )}
 
                   <TrekProposal
                     proposal={proposal}
                     onBegin={handleBeginTrek}
-                    onUpgrade={() => navigate('/settings')}
+                    onUpgrade={async () => {
+                      try {
+                        await createCheckoutSession()
+                      } catch {
+                        setActivateError('Could not start checkout. Please try again.')
+                      }
+                    }}
                     onRescope={() => {
                       // Re-generate with day_hike constraint
                       setGenerationPhase('generating')
@@ -370,11 +379,11 @@ export default function OnboardingFlow() {
 
               {generateError && (
                 <div className="space-y-4">
-                  <SherpaTerminal>
+                  <SherpaSpeech>
                     <p className="text-signal-orange" role="alert">
                       The weather turned. Please try again.
                     </p>
-                  </SherpaTerminal>
+                  </SherpaSpeech>
                   <button
                     onClick={() => {
                       setStep(2)
