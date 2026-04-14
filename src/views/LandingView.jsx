@@ -231,17 +231,18 @@ export default function LandingView() {
             <div className="text-center space-y-6">
               <div>
                 <h1 className="font-display text-3xl sm:text-4xl text-ink mb-4">
-                  Welcome, Climber
+                  {profile?.total_treks_completed > 0 ? 'What will you learn next?' : 'Welcome, Climber'}
                 </h1>
                 <p className="font-body text-lg text-trail-brown">
-                  No active trek. The mountain is waiting.
+                  {profile?.total_treks_completed > 0 ? 'Pick your next skill and the Sherpa will map the trail.' : 'No active trek. The mountain is waiting.'}
                 </p>
               </div>
               <button
                 onClick={() => navigate('/onboarding')}
                 className="w-full py-3 bg-summit-cobalt text-white font-ui font-semibold rounded-lg hover:bg-summit-cobalt/90 transition-colors"
               >
-                Start a New Trek
+                <span className="block">Start a New Trek</span>
+                <span className="block text-xs font-normal text-white/60 mt-0.5">Tell the Sherpa what you want to learn</span>
               </button>
               <button
                 onClick={() => navigate('/chat')}
