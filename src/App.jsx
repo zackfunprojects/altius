@@ -8,6 +8,8 @@ import SherpaChat from './views/SherpaChat'
 import TrailView from './views/TrailView'
 import SummitChallenge from './views/SummitChallenge'
 import TrekNotebookView from './views/TrekNotebookView'
+import SettingsView from './views/SettingsView'
+import ExpeditionLogView from './views/ExpeditionLogView'
 import OnboardingFlow from './views/OnboardingFlow'
 
 function ProtectedRoute({ children }) {
@@ -96,6 +98,22 @@ export default function App() {
         element={
           <ProtectedRoute>
             <TrekNotebookView />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/settings"
+        element={
+          <ProtectedRoute>
+            <SettingsView />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/expedition-log"
+        element={
+          <ProtectedRoute>
+            <ExpeditionLogView />
           </ProtectedRoute>
         }
       />

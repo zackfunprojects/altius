@@ -67,6 +67,11 @@ export async function activateTrek(trekId) {
     if (activeCount >= 1) {
       throw new Error('Free tier is limited to 1 active trek. Complete or abandon your current trek first.')
     }
+
+    // Free tier: Day Hike difficulty only
+    if (trek.difficulty && trek.difficulty !== 'day_hike') {
+      throw new Error('Free tier is limited to Day Hike difficulty. Upgrade to Pro for all difficulty levels.')
+    }
   }
 
   const { error: trekError } = await supabase
@@ -374,7 +379,7 @@ export async function completeSection(sectionId) {
     trekId: section.trek_id,
   })
 
-  // Unlock next section in this camp
+  // Unlock next section in this camp (progression-critical - must not swallow errors)
   const { data: nextSection } = await supabase
     .from('trail_sections')
     .select('id')
@@ -383,11 +388,13 @@ export async function completeSection(sectionId) {
     .maybeSingle()
 
   if (nextSection) {
-    await supabase
+    const { error: unlockError } = await supabase
       .from('trail_sections')
       .update({ status: 'active' })
       .eq('id', nextSection.id)
       .eq('status', 'locked')
+
+    if (unlockError) throw unlockError
   }
 
   await checkCampComplete(section.camp_id)
@@ -454,12 +461,17 @@ export async function checkCampComplete(campId) {
     trekId: camp.trek_id,
   })
 
-  // Fire camp_reached event
-  await fireLifecycleEvent(camp.user_id, camp.trek_id, 'camp_reached',
-    `Camp reached`,
-    `Camp ${camp.camp_number} complete.`
-  )
+  // Fire camp_reached event (non-blocking - event logging is not progression-critical)
+  try {
+    await fireLifecycleEvent(camp.user_id, camp.trek_id, 'camp_reached',
+      `Camp reached`,
+      `Camp ${camp.camp_number} complete.`
+    )
+  } catch (err) {
+    logWarn('camp-complete', 'Failed to fire camp_reached event', { error: err.message })
+  }
 
+  // Unlock next camp (progression-critical - must throw on failure)
   await unlockNextCamp(camp.trek_id, camp.camp_number)
 
   return true

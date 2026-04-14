@@ -70,8 +70,10 @@ const MountainScene = memo(function MountainScene({
     palette[0] || '#2C2418',
   ]
 
-  // Determine active camp position for mountaineer
-  const activePos = campPositions[currentCampIndex] || campPositions[0]
+  // Determine active camp position for mountaineer (guard for empty camps)
+  const activePos = campPositions.length > 0
+    ? (campPositions[currentCampIndex] || campPositions[0])
+    : null
 
   return (
     <div className="relative w-full h-full">

@@ -79,8 +79,8 @@ export default function SherpaAside({ open, onClose, section, trekId }) {
               </p>
             </div>
           )}
-          {messages.map((msg, i) => (
-            <div key={i} className={msg.role === 'user' ? 'flex justify-end' : ''}>
+          {messages.map((msg) => (
+            <div key={msg.id || msg.content?.slice(0, 20)} className={msg.role === 'user' ? 'flex justify-end' : ''}>
               <div
                 className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${
                   msg.role === 'user'

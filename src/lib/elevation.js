@@ -28,8 +28,26 @@ export async function awardElevation({ userId, delta, sourceType, sourceId, trek
     return { delta, totalAfter: rpcResult }
   }
 
-  // Fallback: use atomic increment via Supabase update
-  // This is safe because current_elevation is incremented server-side
+  // Fallback: atomic increment via RPC that handles both profile update + log insert
+  const { data: updatedProfile, error: rpcFallbackError } = await supabase.rpc('increment_elevation_fallback', {
+    p_user_id: userId,
+    p_delta: delta,
+  })
+
+  if (!rpcFallbackError) {
+    // RPC succeeded - insert log entry (non-critical, profile is already updated)
+    await supabase.from('elevation_log').insert({
+      user_id: userId,
+      delta,
+      total_after: updatedProfile,
+      source_type: sourceType,
+      source_id: sourceId || null,
+      trek_id: trekId || null,
+    })
+    return { delta, totalAfter: updatedProfile }
+  }
+
+  // Last resort: sequential (accepts minor race risk over total failure)
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('current_elevation')
@@ -40,8 +58,12 @@ export async function awardElevation({ userId, delta, sourceType, sourceId, trek
 
   const totalAfter = profile.current_elevation + delta
 
-  // Insert elevation log entry
-  const { error: insertError } = await supabase.from('elevation_log').insert({
+  await supabase
+    .from('profiles')
+    .update({ current_elevation: totalAfter, last_active: new Date().toISOString() })
+    .eq('id', userId)
+
+  await supabase.from('elevation_log').insert({
     user_id: userId,
     delta,
     total_after: totalAfter,
@@ -49,19 +71,6 @@ export async function awardElevation({ userId, delta, sourceType, sourceId, trek
     source_id: sourceId || null,
     trek_id: trekId || null,
   })
-
-  if (insertError) throw insertError
-
-  // Update profile elevation and last_active
-  const { error: updateError } = await supabase
-    .from('profiles')
-    .update({
-      current_elevation: totalAfter,
-      last_active: new Date().toISOString(),
-    })
-    .eq('id', userId)
-
-  if (updateError) throw updateError
 
   return { delta, totalAfter }
 }

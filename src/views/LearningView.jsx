@@ -34,6 +34,7 @@ export default function LearningView() {
   const [firesideOpen, setFiresideOpen] = useState(false)
   const [journalOpen, setJournalOpen] = useState(false)
   const [journalText, setJournalText] = useState('')
+  const [journalError, setJournalError] = useState(null)
   const [completing, setCompleting] = useState(false)
   const [completedExercises, setCompletedExercises] = useState(new Set())
 
@@ -150,8 +151,9 @@ export default function LearningView() {
       })
       setJournalText('')
       setJournalOpen(false)
-    } catch (err) {
-      console.error('Failed to save journal note:', err)
+    } catch {
+      // Keep journal text so user doesn't lose their note
+      setJournalError('Failed to save note. Please try again.')
     }
   }, [journalText, trek, displayedSection, activeCamp, addNote])
 
@@ -368,11 +370,14 @@ export default function LearningView() {
             </label>
             <textarea
               value={journalText}
-              onChange={(e) => setJournalText(e.target.value)}
+              onChange={(e) => { setJournalText(e.target.value); setJournalError(null) }}
               placeholder="A quick note about what you're learning..."
               className="w-full h-20 px-3 py-2 font-body text-sm text-ink bg-white border border-trail-brown/20 rounded-md resize-none focus:outline-none focus:ring-1 focus:ring-summit-cobalt/40"
               autoFocus
             />
+            {journalError && (
+              <p className="text-xs text-signal-orange mt-1">{journalError}</p>
+            )}
             <div className="flex justify-end gap-2 mt-2">
               <button
                 onClick={() => { setJournalOpen(false); setJournalText('') }}

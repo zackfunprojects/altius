@@ -1,5 +1,7 @@
-import { useState, useCallback, useRef, useMemo } from 'react'
+import { useState, useCallback, useRef, useMemo, useEffect } from 'react'
 import { askSherpa } from '../lib/sherpa'
+
+const MAX_HISTORY_PER_KEY = 100
 
 /**
  * Shared chat logic for Sherpa conversations.
@@ -16,6 +18,14 @@ export function useSherpaChat({ trekId, sectionId, mode = 'section' }) {
   const activeKey = mode === 'section' ? sectionId : (trekId || 'global')
   activeKeyRef.current = activeKey
 
+  // Cleanup on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      setHistoryMap({})
+      setGeneralMessages([])
+    }
+  }, [])
+
   const messages = useMemo(() => {
     if (mode === 'general') return generalMessages
     return (activeKey && historyMap[activeKey]) || []
@@ -23,12 +33,19 @@ export function useSherpaChat({ trekId, sectionId, mode = 'section' }) {
 
   const appendMessage = useCallback((key, msg) => {
     if (mode === 'general') {
-      setGeneralMessages(prev => [...prev, msg])
+      setGeneralMessages(prev => {
+        const next = [...prev, msg]
+        return next.length > MAX_HISTORY_PER_KEY ? next.slice(-MAX_HISTORY_PER_KEY) : next
+      })
     } else {
-      setHistoryMap(prev => ({
-        ...prev,
-        [key]: [...(prev[key] || []), msg],
-      }))
+      setHistoryMap(prev => {
+        const existing = prev[key] || []
+        const next = [...existing, msg]
+        return {
+          ...prev,
+          [key]: next.length > MAX_HISTORY_PER_KEY ? next.slice(-MAX_HISTORY_PER_KEY) : next,
+        }
+      })
     }
   }, [mode])
 
@@ -36,7 +53,7 @@ export function useSherpaChat({ trekId, sectionId, mode = 'section' }) {
     if (!text?.trim() || loading) return false
 
     const requestKey = activeKeyRef.current
-    appendMessage(requestKey, { role: 'user', content: text.trim() })
+    appendMessage(requestKey, { role: 'user', content: text.trim(), id: `u-${Date.now()}` })
     setLoading(true)
 
     try {
@@ -55,13 +72,14 @@ export function useSherpaChat({ trekId, sectionId, mode = 'section' }) {
 
       // Only append if we're still on the same context
       if (activeKeyRef.current === requestKey) {
-        appendMessage(requestKey, { role: 'assistant', content: response })
+        appendMessage(requestKey, { role: 'assistant', content: response, id: `a-${Date.now()}` })
       }
     } catch {
       if (activeKeyRef.current === requestKey) {
         appendMessage(requestKey, {
           role: 'assistant',
           content: 'The mountain fog is thick. Try again in a moment.',
+          id: `e-${Date.now()}`,
         })
       }
     } finally {

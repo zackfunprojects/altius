@@ -90,9 +90,6 @@ export default function TrekProposal({ proposal, onBegin, loading }) {
         >
           {loading ? 'Preparing the trail...' : 'Begin the Trek'}
         </button>
-        <p className="text-center text-xs font-ui text-trail-brown/40">
-          Scope adjustment coming soon
-        </p>
       </div>
     </div>
   )
