@@ -169,6 +169,12 @@ export default function TrailView() {
         >
           Talk to the Sherpa
         </button>
+        <button
+          onClick={() => navigate('/notebook')}
+          className="flex-shrink-0 py-2.5 px-4 text-phosphor-green/50 font-mono text-sm hover:text-phosphor-green transition-colors"
+        >
+          Notebook
+        </button>
       </footer>
 
       {/* Event overlay */}

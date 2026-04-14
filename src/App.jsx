@@ -6,6 +6,8 @@ import LandingView from './views/LandingView'
 import LearningView from './views/LearningView'
 import SherpaChat from './views/SherpaChat'
 import TrailView from './views/TrailView'
+import SummitChallenge from './views/SummitChallenge'
+import TrekNotebookView from './views/TrekNotebookView'
 import OnboardingFlow from './views/OnboardingFlow'
 
 function ProtectedRoute({ children }) {
@@ -78,6 +80,22 @@ export default function App() {
         element={
           <ProtectedRoute>
             <TrailView />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/summit"
+        element={
+          <ProtectedRoute>
+            <SummitChallenge />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/notebook"
+        element={
+          <ProtectedRoute>
+            <TrekNotebookView />
           </ProtectedRoute>
         }
       />

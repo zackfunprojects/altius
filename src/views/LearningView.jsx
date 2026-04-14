@@ -304,9 +304,20 @@ export default function LearningView() {
             ) : (
               <div className="max-w-2xl mx-auto text-center py-12">
                 <h2 className="font-display text-2xl text-ink mb-2">All sections complete</h2>
-                <p className="font-body text-trail-brown">
+                <p className="font-body text-trail-brown mb-2">
                   The summit challenge awaits.
                 </p>
+                {trek?.summit_challenge?.description && (
+                  <p className="font-body text-sm text-trail-brown/70 mb-6 max-w-md mx-auto">
+                    {trek.summit_challenge.description}
+                  </p>
+                )}
+                <button
+                  onClick={() => navigate('/summit')}
+                  className="px-8 py-3 bg-summit-cobalt text-white font-ui font-semibold rounded-lg hover:bg-summit-cobalt/90 transition-colors"
+                >
+                  Attempt Summit
+                </button>
               </div>
             )}
           </div>

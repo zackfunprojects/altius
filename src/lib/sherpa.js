@@ -153,6 +153,30 @@ export async function advanceScenario({ exerciseSpec, conversationHistory, userM
  * @param {string} params.trekId - The active trek ID
  * @returns {Promise<string>} The morning question text
  */
+/**
+ * Calls the summit-evaluate Edge Function to evaluate a summit challenge submission.
+ *
+ * @param {Object} params
+ * @param {string} params.trekId - The trek ID
+ * @param {string} [params.deliverableUrl] - URL to the user's deliverable
+ * @param {string} params.deliverableText - Description of what the user built
+ * @returns {Promise<Object>} Evaluation with passed, overall_score, dimension_scores, summit_entry, retry_guidance
+ */
+export async function evaluateSummit({ trekId, deliverableUrl, deliverableText }) {
+  const { data, error } = await supabase.functions.invoke('summit-evaluate', {
+    body: {
+      trek_id: trekId,
+      deliverable_url: deliverableUrl || null,
+      deliverable_text: deliverableText,
+    },
+  })
+
+  if (error) throw error
+  if (data?.error) throw new Error(data.error)
+
+  return data
+}
+
 export async function getMorningQuestion({ trekId }) {
   const { data, error } = await supabase.functions.invoke('morning-question', {
     body: { trek_id: trekId },

@@ -164,6 +164,15 @@ export default function LandingView() {
               </button>
             </div>
           )}
+          {/* Trek Notebook link - always visible */}
+          <div className="mt-6 text-center">
+            <button
+              onClick={() => navigate('/notebook')}
+              className="text-sm font-ui text-trail-brown/60 hover:text-ink transition-colors underline underline-offset-2"
+            >
+              Trek Notebook
+            </button>
+          </div>
         </div>
       </main>
 
