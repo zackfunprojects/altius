@@ -1,7 +1,21 @@
-import { useState } from 'react'
+import { useState, useCallback, useRef } from 'react'
+import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import FourColorBar from '../components/brand/FourColorBar'
 import WordMark from '../components/brand/WordMark'
+
+const MIN_PASSWORD_LENGTH = 8
+const RESEND_COOLDOWN_MS = 60_000
+
+function validatePassword(pw) {
+  if (pw.length < MIN_PASSWORD_LENGTH) return `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`
+  return null
+}
+
+function validateEmail(email) {
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'Enter a valid email address.'
+  return null
+}
 
 export default function AuthView() {
   const { signIn, signUp } = useAuth()
@@ -12,19 +26,125 @@ export default function AuthView() {
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
 
-  async function handleSubmit(e) {
+  // Email confirmation state
+  const [awaitingConfirmation, setAwaitingConfirmation] = useState(false)
+  const [resendCooldown, setResendCooldown] = useState(false)
+  const lastSubmitRef = useRef(0)
+
+  const handleSubmit = useCallback(async (e) => {
     e.preventDefault()
     setError(null)
+
+    // Debounce - prevent rapid resubmission
+    const now = Date.now()
+    if (now - lastSubmitRef.current < 2000) return
+    lastSubmitRef.current = now
+
+    // Client-side validation
+    const emailError = validateEmail(email)
+    if (emailError) { setError(emailError); return }
+
+    if (isSignUp) {
+      const pwError = validatePassword(password)
+      if (pwError) { setError(pwError); return }
+      if (!displayName.trim()) { setError('Display name is required.'); return }
+    }
+
     setLoading(true)
 
-    const result = isSignUp
-      ? await signUp(email, password, displayName)
-      : await signIn(email, password)
+    if (isSignUp) {
+      const { data, error: signUpError } = await signUp(email, password, displayName.trim())
 
-    if (result.error) {
-      setError(result.error.message)
+      if (signUpError) {
+        setError(signUpError.message)
+        setLoading(false)
+        return
+      }
+
+      // Supabase returns user but no session when email confirmation is required
+      if (data?.user && !data.session) {
+        setAwaitingConfirmation(true)
+        setLoading(false)
+        return
+      }
+
+      // If email confirmation is disabled, user gets a session immediately
+      setLoading(false)
+    } else {
+      const { error: signInError } = await signIn(email, password)
+
+      if (signInError) {
+        // Map common Supabase errors to friendlier messages
+        if (signInError.message?.includes('Invalid login credentials')) {
+          setError('Incorrect email or password.')
+        } else if (signInError.message?.includes('Email not confirmed')) {
+          setAwaitingConfirmation(true)
+        } else {
+          setError(signInError.message)
+        }
+      }
+      setLoading(false)
     }
-    setLoading(false)
+  }, [email, password, displayName, isSignUp, signUp, signIn])
+
+  const handleResendConfirmation = useCallback(async () => {
+    if (resendCooldown || !email) return
+    setError(null)
+
+    const { error: resendError } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+    })
+
+    if (resendError) {
+      setError(resendError.message)
+    } else {
+      setResendCooldown(true)
+      setTimeout(() => setResendCooldown(false), RESEND_COOLDOWN_MS)
+    }
+  }, [email, resendCooldown])
+
+  // Confirmation waiting screen
+  if (awaitingConfirmation) {
+    return (
+      <div className="min-h-screen bg-catalog-cream flex flex-col">
+        <FourColorBar />
+        <div className="flex-1 flex items-center justify-center px-4">
+          <div className="w-full max-w-sm text-center">
+            <WordMark size="lg" />
+            <div className="mt-8 space-y-4">
+              <h2 className="font-display text-2xl text-ink">Check your email</h2>
+              <p className="font-body text-trail-brown leading-relaxed">
+                We sent a confirmation link to <strong className="text-ink">{email}</strong>. Click the link to activate your account, then return here to sign in.
+              </p>
+
+              {error && (
+                <p className="text-signal-orange text-sm font-ui">{error}</p>
+              )}
+
+              <button
+                onClick={handleResendConfirmation}
+                disabled={resendCooldown}
+                className="w-full py-2.5 border border-summit-cobalt/30 text-summit-cobalt font-ui font-semibold rounded-md hover:bg-summit-cobalt/5 transition-colors disabled:opacity-50"
+              >
+                {resendCooldown ? 'Email sent - check your inbox' : 'Resend confirmation email'}
+              </button>
+
+              <button
+                onClick={() => {
+                  setAwaitingConfirmation(false)
+                  setIsSignUp(false)
+                  setError(null)
+                }}
+                className="w-full py-2.5 bg-summit-cobalt text-white font-ui font-semibold rounded-md hover:bg-summit-cobalt/90 transition-colors"
+              >
+                Sign In
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -48,7 +168,7 @@ export default function AuthView() {
                 <input
                   type="text"
                   value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
+                  onChange={(e) => { setDisplayName(e.target.value); setError(null) }}
                   className="w-full px-3 py-2 border border-trail-brown/30 rounded-md bg-white font-body text-ink focus:outline-none focus:ring-2 focus:ring-summit-cobalt/50"
                   placeholder="Your name on the mountain"
                   required
@@ -63,7 +183,7 @@ export default function AuthView() {
               <input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => { setEmail(e.target.value); setError(null) }}
                 className="w-full px-3 py-2 border border-trail-brown/30 rounded-md bg-white font-body text-ink focus:outline-none focus:ring-2 focus:ring-summit-cobalt/50"
                 placeholder="climber@example.com"
                 required
@@ -77,12 +197,17 @@ export default function AuthView() {
               <input
                 type="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => { setPassword(e.target.value); setError(null) }}
                 className="w-full px-3 py-2 border border-trail-brown/30 rounded-md bg-white font-body text-ink focus:outline-none focus:ring-2 focus:ring-summit-cobalt/50"
-                placeholder="At least 6 characters"
-                minLength={6}
+                placeholder={`At least ${MIN_PASSWORD_LENGTH} characters`}
+                minLength={MIN_PASSWORD_LENGTH}
                 required
               />
+              {isSignUp && password.length > 0 && password.length < MIN_PASSWORD_LENGTH && (
+                <p className="text-xs font-ui text-trail-brown/60 mt-1">
+                  {MIN_PASSWORD_LENGTH - password.length} more character{MIN_PASSWORD_LENGTH - password.length !== 1 ? 's' : ''} needed
+                </p>
+              )}
             </div>
 
             {error && (
