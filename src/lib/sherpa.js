@@ -12,7 +12,11 @@ export async function interviewForSkill(skillDescription) {
     body: { skill_description: skillDescription },
   })
 
-  if (error) throw error
+  if (error) {
+    // Supabase wraps non-2xx as FunctionsHttpError - extract the body
+    const msg = error?.context?.body ? await error.context.json?.().catch(() => null) : null
+    throw new Error(msg?.error || error.message || 'Edge Function request failed')
+  }
   if (data?.error) throw new Error(data.error)
 
   return data.questions
