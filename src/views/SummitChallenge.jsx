@@ -60,7 +60,7 @@ export default function SummitChallenge() {
       navigate('/notebook')
     } catch (err) {
       console.error('Failed to record summit:', err)
-      setEvalError('Failed to record in notebook. Please try again.')
+      setEvalError('Your summit was evaluated successfully, but recording failed. Please try the "Record" button again.')
       setRecording(false)
     }
   }, [trek, recording, navigate])
@@ -163,8 +163,12 @@ export default function SummitChallenge() {
                   onChange={(e) => setDeliverableText(e.target.value)}
                   placeholder="Describe your completed work in detail. What did you create? How does it meet the challenge requirements?"
                   rows={6}
+                  maxLength={5000}
                   className="w-full px-4 py-3 border border-trail-brown/20 rounded-lg font-body text-sm text-ink bg-white focus:outline-none focus:border-summit-cobalt/50 focus:ring-1 focus:ring-summit-cobalt/20 resize-y"
                 />
+                <p className="text-xs text-trail-brown/50 mt-1 text-right">
+                  {deliverableText.length}/5000
+                </p>
               </div>
 
               <div>

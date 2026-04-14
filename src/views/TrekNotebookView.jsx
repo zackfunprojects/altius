@@ -10,7 +10,7 @@ import SummitCard from '../components/summit/SummitCard'
 export default function TrekNotebookView() {
   const navigate = useNavigate()
   const { profile } = useProfile()
-  const { entries, loading } = useTrekNotebook()
+  const { entries, loading, error } = useTrekNotebook()
 
   return (
     <div className="min-h-screen bg-catalog-cream flex flex-col">
@@ -45,6 +45,16 @@ export default function TrekNotebookView() {
         {loading ? (
           <div className="text-center py-12">
             <p className="font-mono text-trail-brown text-sm">Loading notebook...</p>
+          </div>
+        ) : error ? (
+          <div className="text-center py-12">
+            <p className="font-body text-signal-orange">Could not load your notebook.</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-4 px-4 py-2 bg-signal-orange text-white font-ui font-semibold rounded-md hover:bg-signal-orange/90 transition-colors text-sm"
+            >
+              Retry
+            </button>
           </div>
         ) : entries.length === 0 ? (
           <div className="max-w-md mx-auto py-8">

@@ -149,7 +149,7 @@ Return ONLY the JSON object, no other text.`,
     );
 
     const text =
-      response.content[0].type === "text" ? response.content[0].text : "";
+      response.content?.[0]?.type === "text" ? response.content[0].text : "";
 
     let result;
     try {
@@ -191,6 +191,10 @@ Return ONLY the JSON object, no other text.`,
 
       if (updateError) {
         console.error("Failed to update trek with summit data:", updateError.message);
+        return new Response(
+          JSON.stringify({ error: "Evaluation passed but failed to save. Please try again." }),
+          { status: 500, headers: { ...cors, "Content-Type": "application/json" } }
+        );
       }
     }
 
