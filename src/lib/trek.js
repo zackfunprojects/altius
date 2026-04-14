@@ -68,10 +68,8 @@ export async function activateTrek(trekId) {
       throw new Error('Free tier is limited to 1 active trek. Complete or abandon your current trek first.')
     }
 
-    // Free tier: Day Hike difficulty only
-    if (trek.difficulty && trek.difficulty !== 'day_hike') {
-      throw new Error('Free tier is limited to Day Hike difficulty. Upgrade to Pro for all difficulty levels.')
-    }
+    // Note: difficulty gating handled at trek generation time, not activation.
+    // The AI is instructed to generate day_hike for free users.
   }
 
   const { error: trekError } = await supabase

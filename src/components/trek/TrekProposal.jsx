@@ -46,7 +46,7 @@ export default function TrekProposal({ proposal, onBegin, loading }) {
                     {camp.learning_objectives.map((obj, j) => (
                       <li
                         key={j}
-                        className="text-sm font-body text-ink/70 pl-3 before:content-['-'] before:mr-2 before:text-trail-brown/40"
+                        className="text-sm font-body text-ink/80 pl-3 before:content-['-'] before:mr-2 before:text-ink/40"
                       >
                         {obj}
                       </li>

@@ -41,6 +41,7 @@ export default function OnboardingFlow() {
   const [proposal, setProposal] = useState(null)
   const [generateError, setGenerateError] = useState(null)
   const [activating, setActivating] = useState(false)
+  const [activateError, setActivateError] = useState(null)
 
   // Cleanup line timer on unmount
   useEffect(() => {
@@ -126,16 +127,21 @@ export default function OnboardingFlow() {
     if (!proposal?.trek_id) return
 
     setActivating(true)
+    setActivateError(null)
     try {
       await activateTrek(proposal.trek_id)
 
-      await updateProfile({
-        expedition_origin: expeditionOrigin.trim() || skillDescription.trim(),
-      })
+      try {
+        await updateProfile({
+          expedition_origin: expeditionOrigin.trim() || skillDescription.trim(),
+        })
+      } catch {
+        // Profile update is non-critical
+      }
 
       navigate('/', { replace: true })
     } catch (err) {
-      setGenerateError(err.message || 'Something went wrong. Please try again.')
+      setActivateError(err.message || 'Could not start the trek. Please try again.')
       setActivating(false)
     }
   }, [proposal, expeditionOrigin, skillDescription, updateProfile, navigate])
@@ -308,6 +314,12 @@ export default function OnboardingFlow() {
                       The trail is mapped. Here is your expedition.
                     </p>
                   </SherpaTerminal>
+
+                  {activateError && (
+                    <SherpaTerminal>
+                      <p className="text-signal-orange" role="alert">{activateError}</p>
+                    </SherpaTerminal>
+                  )}
 
                   <TrekProposal
                     proposal={proposal}
