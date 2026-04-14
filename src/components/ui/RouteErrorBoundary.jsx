@@ -10,8 +10,8 @@ export default class RouteErrorBoundary extends Component {
     this.state = { hasError: false }
   }
 
-  static getDerivedStateFromError() {
-    return { hasError: true }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error }
   }
 
   render() {
@@ -22,9 +22,14 @@ export default class RouteErrorBoundary extends Component {
             <h2 className="font-display text-2xl text-ink mb-4">
               Trail obstruction
             </h2>
-            <p className="font-body text-trail-brown mb-6">
+            <p className="font-body text-trail-brown mb-4">
               Something went wrong on this page. Try going back or reloading.
             </p>
+            {this.state.error && (
+              <p className="font-mono text-xs text-trail-brown/50 mb-6 max-w-sm mx-auto break-all">
+                {this.state.error.message || String(this.state.error)}
+              </p>
+            )}
             <div className="flex gap-3 justify-center">
               <button
                 onClick={() => { this.setState({ hasError: false }); window.history.back() }}
