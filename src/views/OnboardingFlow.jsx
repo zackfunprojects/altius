@@ -18,7 +18,7 @@ const GENERATION_LINES = [
 const MIN_GENERATION_MS = 4000
 
 export default function OnboardingFlow() {
-  const { user } = useAuth()
+  const { user, signOut } = useAuth()
   const { updateProfile } = useProfile()
   const navigate = useNavigate()
   const lineTimerRef = useRef(null)
@@ -143,11 +143,17 @@ export default function OnboardingFlow() {
   return (
     <div className="min-h-screen bg-terminal-dark flex flex-col crt-scanlines crt-vignette">
       <PageTitle title="Onboarding" />
-      {/* Step indicator */}
-      <div className="px-4 sm:px-6 pt-6" role="status" aria-live="polite">
+      {/* Step indicator + sign out */}
+      <div className="px-4 sm:px-6 pt-6 flex items-center justify-between" role="status" aria-live="polite">
         <p className="font-mono text-trail-brown/50 text-xs" aria-label={`Step ${step} of 3`}>
           {step} / 3
         </p>
+        <button
+          onClick={async () => { await signOut(); navigate('/auth') }}
+          className="font-mono text-trail-brown/40 text-xs hover:text-catalog-cream transition-colors"
+        >
+          Sign Out
+        </button>
       </div>
 
       <div className="flex-1 flex items-center justify-center px-4 sm:px-6 py-8">
