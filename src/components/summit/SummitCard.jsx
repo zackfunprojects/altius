@@ -8,7 +8,7 @@ const BADGE_COLORS = {
 /**
  * Vintage expedition postcard displaying a completed trek from the notebook.
  */
-export default function SummitCard({ entry, index = 0 }) {
+export default function SummitCard({ entry, index = 0, onRefresh }) {
   const badgeColor = entry.skill_badge?.color || BADGE_COLORS.default
   const badgeLabel = entry.skill_badge?.label || entry.skill_name
   // Alternate slight rotation for postcard feel
@@ -66,17 +66,27 @@ export default function SummitCard({ entry, index = 0 }) {
           </div>
         )}
 
-        {/* Deliverable link */}
-        {entry.summit_deliverable_url && (
-          <a
-            href={entry.summit_deliverable_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs font-ui text-summit-cobalt hover:text-summit-cobalt/80 underline"
-          >
-            View deliverable
-          </a>
-        )}
+        {/* Actions */}
+        <div className="flex items-center gap-4">
+          {entry.summit_deliverable_url && (
+            <a
+              href={entry.summit_deliverable_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs font-ui text-summit-cobalt hover:text-summit-cobalt/80 underline"
+            >
+              View deliverable
+            </a>
+          )}
+          {onRefresh && (
+            <button
+              onClick={onRefresh}
+              className="text-xs font-ui text-fitz-violet hover:text-fitz-violet/80 underline"
+            >
+              Skill Refresh
+            </button>
+          )}
+        </div>
       </JournalPaper>
     </div>
   )

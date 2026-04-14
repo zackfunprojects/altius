@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useProfile } from '../hooks/useProfile'
 import { useTrekNotebook } from '../hooks/useTrekNotebook'
@@ -6,11 +7,13 @@ import WordMark from '../components/brand/WordMark'
 import ElevationCounter from '../components/brand/ElevationCounter'
 import SherpaTerminal from '../components/brand/SherpaTerminal'
 import SummitCard from '../components/summit/SummitCard'
+import SkillRefresh from '../components/summit/SkillRefresh'
 
 export default function TrekNotebookView() {
   const navigate = useNavigate()
   const { profile } = useProfile()
   const { entries, loading, error } = useTrekNotebook()
+  const [refreshingEntry, setRefreshingEntry] = useState(null)
 
   return (
     <div className="min-h-screen bg-catalog-cream flex flex-col">
@@ -74,7 +77,18 @@ export default function TrekNotebookView() {
         ) : (
           <div className="space-y-6">
             {entries.map((entry, i) => (
-              <SummitCard key={entry.id} entry={entry} index={i} />
+              <div key={entry.id}>
+                <SummitCard entry={entry} index={i} onRefresh={() => setRefreshingEntry(entry)} />
+                {refreshingEntry?.id === entry.id && (
+                  <div className="mt-3 bg-white rounded-lg border border-trail-brown/15 shadow-sm">
+                    <SkillRefresh
+                      entry={entry}
+                      onClose={() => setRefreshingEntry(null)}
+                      subscriptionTier={profile?.subscription_tier}
+                    />
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         )}
