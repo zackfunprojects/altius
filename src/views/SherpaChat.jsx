@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useActiveTrek } from '../hooks/useActiveTrek'
 import { useSherpaChat } from '../hooks/useSherpaChat'
 import FourColorBar from '../components/brand/FourColorBar'
+import PageTitle from '../components/ui/PageTitle'
 
 export default function SherpaChat() {
   const navigate = useNavigate()
@@ -48,6 +49,7 @@ export default function SherpaChat() {
 
   return (
     <div className="min-h-screen bg-terminal-dark flex flex-col crt-vignette">
+      <PageTitle title="Sherpa" />
       <FourColorBar />
 
       {/* Header */}

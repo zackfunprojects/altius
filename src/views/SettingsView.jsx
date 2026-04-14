@@ -7,6 +7,7 @@ import { createCheckoutSession, getSubscriptionStatus } from '../lib/stripe'
 import FourColorBar from '../components/brand/FourColorBar'
 import WordMark from '../components/brand/WordMark'
 import ElevationCounter from '../components/brand/ElevationCounter'
+import PageTitle from '../components/ui/PageTitle'
 
 export default function SettingsView() {
   const navigate = useNavigate()
@@ -61,6 +62,7 @@ export default function SettingsView() {
 
   return (
     <div className="min-h-screen bg-catalog-cream flex flex-col">
+      <PageTitle title="Settings" />
       <FourColorBar />
 
       <header className="px-4 sm:px-6 py-4 flex items-center justify-between border-b border-trail-brown/20">

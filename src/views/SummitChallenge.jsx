@@ -11,6 +11,7 @@ import SherpaTerminal from '../components/brand/SherpaTerminal'
 import JournalPaper from '../components/brand/JournalPaper'
 import DifficultyBadge from '../components/brand/DifficultyBadge'
 import RubricDisplay from '../components/summit/RubricDisplay'
+import PageTitle from '../components/ui/PageTitle'
 
 export default function SummitChallenge() {
   const navigate = useNavigate()
@@ -105,6 +106,7 @@ export default function SummitChallenge() {
 
   return (
     <div className="min-h-screen bg-catalog-cream flex flex-col">
+      <PageTitle title="Summit Challenge" />
       <FourColorBar />
 
       {/* Header */}

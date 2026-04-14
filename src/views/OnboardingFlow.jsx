@@ -7,6 +7,7 @@ import { activateTrek } from '../lib/trek'
 import SherpaTerminal from '../components/brand/SherpaTerminal'
 import TypewriterText from '../components/ui/TypewriterText'
 import TrekProposal from '../components/trek/TrekProposal'
+import PageTitle from '../components/ui/PageTitle'
 
 const GENERATION_LINES = [
   'The Sherpa is reading the terrain...',
@@ -141,6 +142,7 @@ export default function OnboardingFlow() {
 
   return (
     <div className="min-h-screen bg-terminal-dark flex flex-col crt-scanlines crt-vignette">
+      <PageTitle title="Onboarding" />
       {/* Step indicator */}
       <div className="px-4 sm:px-6 pt-6" role="status" aria-live="polite">
         <p className="font-mono text-trail-brown/50 text-xs" aria-label={`Step ${step} of 3`}>

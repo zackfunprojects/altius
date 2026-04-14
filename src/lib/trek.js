@@ -180,11 +180,23 @@ export async function completeTrek(trekId) {
 
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('created_at')
+    .select('created_at, subscription_tier')
     .eq('id', trek.user_id)
     .single()
 
   if (profileError) throw profileError
+
+  // Enforce notebook entry limit for free tier (max 3)
+  if (profile.subscription_tier !== 'pro') {
+    const { count: notebookCount } = await supabase
+      .from('trek_notebook')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', trek.user_id)
+
+    if (notebookCount >= 3) {
+      throw new Error('Free tier is limited to 3 notebook entries. Upgrade to Pro for unlimited entries.')
+    }
+  }
 
   const expeditionDay = getExpeditionDay(profile.created_at)
 
