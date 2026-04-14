@@ -67,6 +67,11 @@ export async function activateTrek(trekId) {
     if (activeCount >= 1) {
       throw new Error('Free tier is limited to 1 active trek. Complete or abandon your current trek first.')
     }
+
+    // Free tier: Day Hike difficulty only
+    if (trek.difficulty && trek.difficulty !== 'day_hike') {
+      throw new Error('Free tier is limited to Day Hike difficulty. Upgrade to Pro for all difficulty levels.')
+    }
   }
 
   const { error: trekError } = await supabase
@@ -375,19 +380,33 @@ export async function completeSection(sectionId) {
   })
 
   // Unlock next section in this camp
-  const { data: nextSection } = await supabase
-    .from('trail_sections')
-    .select('id')
-    .eq('camp_id', section.camp_id)
-    .eq('section_number', section.section_number + 1)
-    .maybeSingle()
-
-  if (nextSection) {
-    await supabase
+  try {
+    const { data: nextSection } = await supabase
       .from('trail_sections')
-      .update({ status: 'active' })
-      .eq('id', nextSection.id)
-      .eq('status', 'locked')
+      .select('id')
+      .eq('camp_id', section.camp_id)
+      .eq('section_number', section.section_number + 1)
+      .maybeSingle()
+
+    if (nextSection) {
+      const { error: unlockError } = await supabase
+        .from('trail_sections')
+        .update({ status: 'active' })
+        .eq('id', nextSection.id)
+        .eq('status', 'locked')
+
+      if (unlockError) {
+        logWarn('section-complete', 'Failed to unlock next section', {
+          sectionId: nextSection.id,
+          error: unlockError.message,
+        })
+      }
+    }
+  } catch (err) {
+    logWarn('section-complete', 'Error unlocking next section', {
+      campId: section.camp_id,
+      error: err.message,
+    })
   }
 
   await checkCampComplete(section.camp_id)
@@ -454,13 +473,25 @@ export async function checkCampComplete(campId) {
     trekId: camp.trek_id,
   })
 
-  // Fire camp_reached event
-  await fireLifecycleEvent(camp.user_id, camp.trek_id, 'camp_reached',
-    `Camp reached`,
-    `Camp ${camp.camp_number} complete.`
-  )
+  // Fire camp_reached event (non-blocking - don't fail camp completion if event fails)
+  try {
+    await fireLifecycleEvent(camp.user_id, camp.trek_id, 'camp_reached',
+      `Camp reached`,
+      `Camp ${camp.camp_number} complete.`
+    )
+  } catch (err) {
+    logWarn('camp-complete', 'Failed to fire camp_reached event', { error: err.message })
+  }
 
-  await unlockNextCamp(camp.trek_id, camp.camp_number)
+  try {
+    await unlockNextCamp(camp.trek_id, camp.camp_number)
+  } catch (err) {
+    logWarn('camp-complete', 'Failed to unlock next camp', {
+      trekId: camp.trek_id,
+      campNumber: camp.camp_number,
+      error: err.message,
+    })
+  }
 
   return true
 }

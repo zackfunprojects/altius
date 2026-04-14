@@ -16,10 +16,22 @@ export function AuthProvider({ children }) {
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (event, session) => {
         setSession(session)
         setUser(session?.user ?? null)
         setLoading(false)
+
+        // Handle token refresh failure - force re-login
+        if (event === 'TOKEN_REFRESHED' && !session) {
+          setSession(null)
+          setUser(null)
+        }
+
+        // Handle sign out from another tab
+        if (event === 'SIGNED_OUT') {
+          setSession(null)
+          setUser(null)
+        }
       }
     )
 

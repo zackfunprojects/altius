@@ -12,7 +12,7 @@ import MorningQuestion from '../components/MorningQuestion'
 
 export default function LandingView() {
   const navigate = useNavigate()
-  const { user, signOut } = useAuth()
+  const { user } = useAuth()
   const { profile } = useProfile()
   const { trek, camps, loading: trekLoading, error: trekError } = useActiveTrek()
 
@@ -51,10 +51,14 @@ export default function LandingView() {
         <div className="flex items-center gap-4">
           <ElevationCounter elevation={profile?.current_elevation || 0} />
           <button
-            onClick={signOut}
-            className="text-sm font-ui text-trail-brown hover:text-ink transition-colors"
+            onClick={() => navigate('/settings')}
+            className="text-trail-brown/60 hover:text-ink transition-colors"
+            title="Settings"
           >
-            Sign Out
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <circle cx="9" cy="9" r="3" />
+              <path d="M9 1.5V3M9 15V16.5M1.5 9H3M15 9H16.5M3.1 3.1L4.2 4.2M13.8 13.8L14.9 14.9M3.1 14.9L4.2 13.8M13.8 4.2L14.9 3.1" strokeLinecap="round" />
+            </svg>
           </button>
         </div>
       </header>

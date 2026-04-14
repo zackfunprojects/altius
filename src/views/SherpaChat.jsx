@@ -84,8 +84,8 @@ export default function SherpaChat() {
             {welcomeMessage}
           </div>
 
-          {messages.map((msg, i) => (
-            <div key={i} className={msg.role === 'user' ? 'flex justify-end' : ''}>
+          {messages.map((msg) => (
+            <div key={msg.id || msg.content?.slice(0, 20)} className={msg.role === 'user' ? 'flex justify-end' : ''}>
               <div
                 className={`max-w-[85%] rounded-lg px-4 py-3 text-sm ${
                   msg.role === 'user'

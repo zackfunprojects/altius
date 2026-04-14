@@ -1,5 +1,6 @@
 import JournalPaper from '../brand/JournalPaper'
 import DifficultyBadge from '../brand/DifficultyBadge'
+import ShareCard from './ShareCard'
 
 const BADGE_COLORS = {
   default: '#1A3D7C',
@@ -86,6 +87,7 @@ export default function SummitCard({ entry, index = 0, onRefresh }) {
               Skill Refresh
             </button>
           )}
+          <ShareCard entry={entry} />
         </div>
       </JournalPaper>
     </div>

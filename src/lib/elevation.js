@@ -28,17 +28,37 @@ export async function awardElevation({ userId, delta, sourceType, sourceId, trek
     return { delta, totalAfter: rpcResult }
   }
 
-  // Fallback: use atomic increment via Supabase update
-  // This is safe because current_elevation is incremented server-side
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('current_elevation')
-    .eq('id', userId)
-    .single()
+  // Fallback: use SQL expression for atomic increment to avoid read-modify-write race
+  // Update profile elevation atomically using raw SQL increment
+  const { data: updatedProfile, error: updateError } = await supabase.rpc('increment_elevation_fallback', {
+    p_user_id: userId,
+    p_delta: delta,
+  })
 
-  if (profileError) throw profileError
+  // If the RPC doesn't exist, fall back to sequential (last resort)
+  let totalAfter
+  if (updateError) {
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('current_elevation')
+      .eq('id', userId)
+      .single()
 
-  const totalAfter = profile.current_elevation + delta
+    if (profileError) throw profileError
+    totalAfter = profile.current_elevation + delta
+
+    const { error: profUpdateError } = await supabase
+      .from('profiles')
+      .update({
+        current_elevation: totalAfter,
+        last_active: new Date().toISOString(),
+      })
+      .eq('id', userId)
+
+    if (profUpdateError) throw profUpdateError
+  } else {
+    totalAfter = updatedProfile
+  }
 
   // Insert elevation log entry
   const { error: insertError } = await supabase.from('elevation_log').insert({
@@ -51,17 +71,6 @@ export async function awardElevation({ userId, delta, sourceType, sourceId, trek
   })
 
   if (insertError) throw insertError
-
-  // Update profile elevation and last_active
-  const { error: updateError } = await supabase
-    .from('profiles')
-    .update({
-      current_elevation: totalAfter,
-      last_active: new Date().toISOString(),
-    })
-    .eq('id', userId)
-
-  if (updateError) throw updateError
 
   return { delta, totalAfter }
 }
