@@ -177,6 +177,77 @@ export async function evaluateSummit({ trekId, deliverableUrl, deliverableText }
   return data
 }
 
+/**
+ * Calls the screen-analyze Edge Function for Over-the-Shoulder coaching.
+ *
+ * @param {Object} params
+ * @param {string} params.trekId - The trek ID
+ * @param {string} params.screenshotBase64 - Base64 screenshot PNG
+ * @param {string} [params.toolName] - Name of the tool being used
+ * @param {string} [params.currentTask] - What the user is working on
+ * @returns {Promise<Object>} { analysis, coaching_points, suggestion }
+ */
+export async function analyzeScreen({ trekId, screenshotBase64, toolName, currentTask }) {
+  const { data, error } = await supabase.functions.invoke('screen-analyze', {
+    body: {
+      trek_id: trekId,
+      screenshot_base64: screenshotBase64,
+      tool_name: toolName || null,
+      current_task: currentTask || null,
+    },
+  })
+
+  if (error) throw error
+  if (data?.error) throw new Error(data.error)
+
+  return data
+}
+
+/**
+ * Calls the sherpa-voice Edge Function for voice dialogue.
+ *
+ * @param {Object} params
+ * @param {string} [params.trekId] - The trek ID
+ * @param {string} [params.sectionId] - Current section ID
+ * @param {string} params.audioBase64 - Base64 audio recording
+ * @param {Array} [params.conversationHistory] - Prior messages
+ * @returns {Promise<Object>} { transcript, response_text, audio_base64 }
+ */
+export async function voiceChat({ trekId, sectionId, audioBase64, conversationHistory, transcribeOnly }) {
+  const { data, error } = await supabase.functions.invoke('sherpa-voice', {
+    body: {
+      trek_id: trekId || null,
+      section_id: sectionId || null,
+      audio_base64: audioBase64,
+      conversation_history: conversationHistory || [],
+      transcribe_only: transcribeOnly || false,
+    },
+  })
+
+  if (error) throw error
+  if (data?.error) throw new Error(data.error)
+
+  return data
+}
+
+/**
+ * Calls the skill-refresh Edge Function to generate review exercises.
+ *
+ * @param {Object} params
+ * @param {string} params.notebookEntryId - The notebook entry ID
+ * @returns {Promise<Object>} { exercises: Array }
+ */
+export async function refreshSkill({ notebookEntryId }) {
+  const { data, error } = await supabase.functions.invoke('skill-refresh', {
+    body: { notebook_entry_id: notebookEntryId },
+  })
+
+  if (error) throw error
+  if (data?.error) throw new Error(data.error)
+
+  return data
+}
+
 export async function getMorningQuestion({ trekId }) {
   const { data, error } = await supabase.functions.invoke('morning-question', {
     body: { trek_id: trekId },

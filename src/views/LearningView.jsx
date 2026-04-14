@@ -7,6 +7,8 @@ import { useExerciseResponses } from '../hooks/useExerciseResponses'
 import { completeSection } from '../lib/trek'
 import { generateLesson } from '../lib/sherpa'
 import { awardElevation, getElevationDelta } from '../lib/elevation'
+import CoachingPanel from '../components/trek/CoachingPanel'
+import FiresideMode from '../components/trek/FiresideMode'
 import FourColorBar from '../components/brand/FourColorBar'
 import ElevationCounter from '../components/brand/ElevationCounter'
 import DifficultyBadge from '../components/brand/DifficultyBadge'
@@ -28,6 +30,8 @@ export default function LearningView() {
   const [generating, setGenerating] = useState(false)
   const [genError, setGenError] = useState(null)
   const [sherpaOpen, setSherpaOpen] = useState(false)
+  const [coachingOpen, setCoachingOpen] = useState(false)
+  const [firesideOpen, setFiresideOpen] = useState(false)
   const [journalOpen, setJournalOpen] = useState(false)
   const [journalText, setJournalText] = useState('')
   const [completing, setCompleting] = useState(false)
@@ -337,6 +341,18 @@ export default function LearningView() {
               >
                 Journal
               </button>
+              <button
+                onClick={() => setCoachingOpen(true)}
+                className="px-3 py-1.5 text-sm font-ui font-medium text-signal-orange border border-signal-orange/30 rounded-md hover:bg-signal-orange/5 transition-colors"
+              >
+                OTS Coach
+              </button>
+              <button
+                onClick={() => setFiresideOpen(true)}
+                className="px-3 py-1.5 text-sm font-ui font-medium text-alpine-gold border border-alpine-gold/30 rounded-md hover:bg-alpine-gold/5 transition-colors"
+              >
+                Fireside
+              </button>
             </div>
             {/* Section completion is handled in LessonRenderer */}
           </div>
@@ -382,6 +398,22 @@ export default function LearningView() {
         onClose={() => setSherpaOpen(false)}
         section={displayedSection}
         trekId={trek?.id}
+      />
+
+      {/* OTS Coaching panel */}
+      <CoachingPanel
+        open={coachingOpen}
+        onClose={() => setCoachingOpen(false)}
+        trekId={trek?.id}
+        subscriptionTier={profile?.subscription_tier}
+      />
+
+      {/* Fireside voice dialogue */}
+      <FiresideMode
+        open={firesideOpen}
+        onClose={() => setFiresideOpen(false)}
+        trekId={trek?.id}
+        sectionId={displayedSection?.id}
       />
     </div>
   )
