@@ -22,10 +22,13 @@ function SherpaSpeech({ children }) {
   )
 }
 
-const GENERATION_LINES = [
-  'The Sherpa is reading the terrain...',
-  'Your trail is taking shape...',
-  'This mountain has never been climbed quite like this before.',
+const GENERATION_MESSAGES = [
+  'Reading the terrain...',
+  'Mapping the camps...',
+  'Choosing the best route...',
+  'Scouting the trail ahead...',
+  'Setting the pace...',
+  'Almost there...',
 ]
 
 const MIN_GENERATION_MS = 4000
@@ -110,7 +113,7 @@ export default function OnboardingFlow() {
     // Advance generation lines on a timer (stored in ref for cleanup)
     lineTimerRef.current = setInterval(() => {
       setGenerationLineIndex((prev) => {
-        if (prev < GENERATION_LINES.length - 1) return prev + 1
+        if (prev < GENERATION_MESSAGES.length - 1) return prev + 1
         if (lineTimerRef.current) clearInterval(lineTimerRef.current)
         lineTimerRef.current = null
         return prev
@@ -307,21 +310,41 @@ export default function OnboardingFlow() {
           {step === 3 && (
             <div className="space-y-6" aria-label="Trek generation">
               {generationPhase === 'generating' && (
-                <SherpaSpeech>
-                  <div className="space-y-2" role="status" aria-live="polite">
-                    {GENERATION_LINES.slice(0, generationLineIndex + 1).map(
-                      (line, i) => (
-                        <div key={i}>
-                          {i === generationLineIndex ? (
-                            <TypewriterText text={line} speed={30} />
-                          ) : (
-                            <span className="text-phosphor-green/50">{line}</span>
-                          )}
-                        </div>
-                      )
-                    )}
+                <div className="flex flex-col items-center py-12" role="status" aria-live="polite">
+                  {/* Animated mountain building */}
+                  <div className="relative w-24 h-24 mb-6">
+                    <svg viewBox="0 0 96 96" className="w-full h-full">
+                      <path
+                        d="M48 12L12 84H84L48 12Z"
+                        fill="none"
+                        stroke="#1A3D7C"
+                        strokeWidth="2"
+                        strokeDasharray="200"
+                        strokeDashoffset="200"
+                        className="animate-[draw_2s_ease-in-out_infinite]"
+                      />
+                      <path
+                        d="M32 56L44 40L52 48L64 32"
+                        fill="none"
+                        stroke="#D9511C"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        opacity="0.6"
+                        strokeDasharray="80"
+                        strokeDashoffset="80"
+                        className="animate-[draw_2.5s_ease-in-out_0.5s_infinite]"
+                      />
+                    </svg>
                   </div>
-                </SherpaSpeech>
+
+                  {/* Cycling message */}
+                  <p className="font-body text-ink text-base mb-2">
+                    Building your trek
+                  </p>
+                  <p className="font-body text-trail-brown text-sm">
+                    {GENERATION_MESSAGES[generationLineIndex % GENERATION_MESSAGES.length]}
+                  </p>
+                </div>
               )}
 
               {generationPhase === 'proposal' && proposal && (
