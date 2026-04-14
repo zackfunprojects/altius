@@ -76,6 +76,7 @@ export default function App() {
   return (
     <>
       <NetworkStatus />
+      <div id="main-content">
       <Suspense fallback={<LoadingFallback />}>
         <Routes>
           <Route
@@ -88,7 +89,7 @@ export default function App() {
           />
           <Route
             path="/onboarding"
-            element={user ? <OnboardingFlow /> : <Navigate to="/auth" replace />}
+            element={user ? <RouteErrorBoundary><OnboardingFlow /></RouteErrorBoundary> : <Navigate to="/auth" replace />}
           />
           <Route
             path="/"
@@ -125,6 +126,7 @@ export default function App() {
           <Route path="*" element={<NotFoundView />} />
         </Routes>
       </Suspense>
+      </div>
     </>
   )
 }

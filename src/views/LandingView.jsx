@@ -22,16 +22,18 @@ export default function LandingView() {
   const [showMorningQuestion, setShowMorningQuestion] = useState(false)
   const [showAbandonConfirm, setShowAbandonConfirm] = useState(false)
   const [abandoning, setAbandoning] = useState(false)
+  const [abandonError, setAbandonError] = useState(null)
 
   const handleAbandon = useCallback(async () => {
     if (!trek?.id || abandoning) return
     setAbandoning(true)
+    setAbandonError(null)
     try {
       await abandonTrek(trek.id)
       window.location.reload()
-    } catch {
+    } catch (err) {
+      setAbandonError(err.message || 'Failed to abandon trek. Please try again.')
       setAbandoning(false)
-      setShowAbandonConfirm(false)
     }
   }, [trek, abandoning])
 
@@ -79,7 +81,7 @@ export default function LandingView() {
           </button>
         </div>
       </header>
-      <main id="main-content" className="flex-1 flex items-center justify-center px-4 sm:px-6 py-8">
+      <main className="flex-1 flex items-center justify-center px-4 sm:px-6 py-8">
         <div className="w-full max-w-lg">
           {trekLoading ? (
             <div className="text-center">
@@ -181,6 +183,9 @@ export default function LandingView() {
                     <p className="text-xs font-ui text-signal-orange mb-2">
                       Are you sure? This cannot be undone.
                     </p>
+                    {abandonError && (
+                      <p className="text-xs font-ui text-signal-orange mb-2">{abandonError}</p>
+                    )}
                     <div className="flex gap-2 justify-center">
                       <button
                         onClick={() => setShowAbandonConfirm(false)}

@@ -1,8 +1,10 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { sanitizeErrorMessage } from '../lib/sanitize'
 import FourColorBar from '../components/brand/FourColorBar'
 import WordMark from '../components/brand/WordMark'
+import PageTitle from '../components/ui/PageTitle'
 
 export default function ResetPasswordView() {
   const navigate = useNavigate()
@@ -37,7 +39,7 @@ export default function ResetPasswordView() {
     })
 
     if (resetError) {
-      setError(resetError.message)
+      setError(sanitizeErrorMessage(resetError))
     } else {
       setSent(true)
     }
@@ -55,7 +57,7 @@ export default function ResetPasswordView() {
     })
 
     if (updateError) {
-      setError(updateError.message)
+      setError(sanitizeErrorMessage(updateError))
     } else {
       setUpdated(true)
     }
@@ -64,6 +66,7 @@ export default function ResetPasswordView() {
 
   return (
     <div className="min-h-screen bg-catalog-cream flex flex-col">
+      <PageTitle title="Reset Password" />
       <FourColorBar />
       <div className="flex-1 flex items-center justify-center px-4">
         <div className="w-full max-w-sm text-center">
@@ -84,8 +87,9 @@ export default function ResetPasswordView() {
             <form onSubmit={handleUpdatePassword} className="mt-8 space-y-4 text-left">
               <h2 className="font-display text-2xl text-ink text-center">Set new password</h2>
               <div>
-                <label className="block text-sm font-ui font-medium text-ink mb-1">New Password</label>
+                <label htmlFor="new-password" className="block text-sm font-ui font-medium text-ink mb-1">New Password</label>
                 <input
+                  id="new-password"
                   type="password"
                   value={newPassword}
                   onChange={(e) => { setNewPassword(e.target.value); setError(null) }}
@@ -124,8 +128,9 @@ export default function ResetPasswordView() {
                 Enter your email and we will send a reset link.
               </p>
               <div>
-                <label className="block text-sm font-ui font-medium text-ink mb-1">Email</label>
+                <label htmlFor="reset-email" className="block text-sm font-ui font-medium text-ink mb-1">Email</label>
                 <input
+                  id="reset-email"
                   type="email"
                   value={email}
                   onChange={(e) => { setEmail(e.target.value); setError(null) }}

@@ -1,12 +1,14 @@
 import { useNavigate } from 'react-router-dom'
 import FourColorBar from '../components/brand/FourColorBar'
 import WordMark from '../components/brand/WordMark'
+import PageTitle from '../components/ui/PageTitle'
 
 export default function NotFoundView() {
   const navigate = useNavigate()
 
   return (
     <div className="min-h-screen bg-catalog-cream flex flex-col">
+      <PageTitle title="Page Not Found" />
       <FourColorBar />
       <div className="flex-1 flex items-center justify-center px-4">
         <div className="text-center max-w-md">

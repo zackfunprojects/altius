@@ -188,12 +188,14 @@ export async function completeTrek(trekId) {
 
   // Enforce notebook entry limit for free tier (max 3)
   if (profile.subscription_tier !== 'pro') {
-    const { count: notebookCount } = await supabase
+    const { count: notebookCount, error: countError } = await supabase
       .from('trek_notebook')
       .select('id', { count: 'exact', head: true })
       .eq('user_id', trek.user_id)
 
-    if (notebookCount >= 3) {
+    if (countError) throw countError
+
+    if (typeof notebookCount === 'number' && notebookCount >= 3) {
       throw new Error('Free tier is limited to 3 notebook entries. Upgrade to Pro for unlimited entries.')
     }
   }
