@@ -1,6 +1,7 @@
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:4173",
+  "https://altius-navy.vercel.app",
 ];
 
 // Add production domain if set
@@ -11,15 +12,14 @@ if (prodOrigin) allowedOrigins.push(prodOrigin);
 const vercelUrl = Deno.env.get("VERCEL_URL");
 if (vercelUrl) allowedOrigins.push(`https://${vercelUrl}`);
 
-// Match only this project's Vercel preview URLs:
-// https://altius-{hash}-zack-hollands-projects.vercel.app
-const VERCEL_PREVIEW_RE = /^https:\/\/altius-[a-z0-9]+-zack-hollands-projects\.vercel\.app$/;
+// Match any Altius Vercel deployment (production, preview, or custom slug)
+const VERCEL_RE = /^https:\/\/altius[-a-z0-9]*\.vercel\.app$/;
 
 export function getCorsHeaders(req: Request) {
   const origin = req.headers.get("origin") || "";
   const isAllowed =
     allowedOrigins.includes(origin) ||
-    VERCEL_PREVIEW_RE.test(origin);
+    VERCEL_RE.test(origin);
 
   return {
     "Access-Control-Allow-Origin": isAllowed ? origin : allowedOrigins[0],
