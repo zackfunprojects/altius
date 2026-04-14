@@ -1,24 +1,24 @@
 const config = {
   day_hike: {
-    label: 'Day Hike',
+    label: 'Easy Hike',
     bg: 'bg-alpine-gold/15',
     text: 'text-alpine-gold',
     border: 'border-alpine-gold/30',
   },
   weekend_trek: {
-    label: 'Weekend Trek',
+    label: 'Serious Trek',
     bg: 'bg-summit-cobalt/15',
     text: 'text-summit-cobalt',
     border: 'border-summit-cobalt/30',
   },
   expedition: {
-    label: 'Expedition',
+    label: 'Epic Expedition',
     bg: 'bg-signal-orange/15',
     text: 'text-signal-orange',
     border: 'border-signal-orange/30',
   },
   siege: {
-    label: 'Siege',
+    label: 'Summit Siege',
     bg: 'bg-fitz-violet/15',
     text: 'text-fitz-violet',
     border: 'border-fitz-violet/30',

@@ -137,7 +137,7 @@ export default function SettingsView() {
             {sub.tier === 'free' ? (
               <div className="space-y-3">
                 <p className="font-body text-sm text-trail-brown">
-                  Free tier: 1 active trek, Day Hike difficulty, 3 notebook entries.
+                  Free tier: 1 active trek, Easy Hike difficulty, 3 notebook entries.
                 </p>
                 <ul className="text-xs font-ui text-trail-brown/70 space-y-1">
                   <li>- Unlimited treks and all difficulties</li>

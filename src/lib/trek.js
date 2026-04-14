@@ -72,7 +72,7 @@ export async function activateTrek(trekId) {
     // Primary gating is in TrekProposal UI (upgrade CTA + re-scope option)
     // This is the server-side safety net
     if (trek.difficulty && trek.difficulty !== 'day_hike') {
-      throw new Error('Free tier is limited to Day Hike difficulty. Upgrade to Pro for all difficulty levels.')
+      throw new Error('Free tier is limited to Easy Hikes. Upgrade to Pro for all difficulty levels.')
     }
   }
 

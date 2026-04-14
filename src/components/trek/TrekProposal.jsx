@@ -94,7 +94,7 @@ export default function TrekProposal({ proposal, onBegin, onRescope, onUpgrade, 
               This trek is scoped as a <DifficultyBadge difficulty={difficulty} />.
             </p>
             <p className="text-xs font-body text-trail-brown/70">
-              Free accounts are limited to Day Hikes. Upgrade for all difficulties, or re-scope this trek as a shorter Day Hike.
+              Free accounts are limited to Easy Hikes. Upgrade for all difficulty levels, or re-scope this trek as an Easy Hike.
             </p>
           </div>
           <button
@@ -108,7 +108,7 @@ export default function TrekProposal({ proposal, onBegin, onRescope, onUpgrade, 
             disabled={loading}
             className="w-full py-3 border border-trail-brown/20 text-ink font-ui font-medium rounded-lg hover:bg-trail-brown/5 transition-colors disabled:opacity-50"
           >
-            {loading ? 'Re-scoping...' : 'Re-scope as Day Hike'}
+            {loading ? 'Re-scoping...' : 'Re-scope as Easy Hike'}
           </button>
         </div>
       ) : (
