@@ -1,0 +1,27 @@
+{
+  "expo": {
+    "name": "Altius Pocket",
+    "slug": "altius-pocket",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./src/assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "splash": {
+      "backgroundColor": "#0D0F14"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.altius.pocket"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0D0F14"
+      },
+      "package": "com.altius.pocket"
+    },
+    "plugins": [
+      "expo-secure-store"
+    ]
+  }
+}

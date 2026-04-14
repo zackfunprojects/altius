@@ -1,0 +1,35 @@
+{
+  "name": "altius-pocket",
+  "version": "1.0.0",
+  "private": true,
+  "main": "App.jsx",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "lint": "eslint . --ext .js,.jsx"
+  },
+  "dependencies": {
+    "expo": "~52.0.0",
+    "expo-av": "~15.0.0",
+    "expo-notifications": "~0.29.0",
+    "expo-secure-store": "~14.0.0",
+    "expo-status-bar": "~2.0.0",
+    "react": "18.3.1",
+    "react-native": "0.76.9",
+    "react-native-svg": "^15.0.0",
+    "react-native-gesture-handler": "~2.20.0",
+    "react-native-reanimated": "~3.16.0",
+    "react-native-safe-area-context": "~4.14.0",
+    "react-native-screens": "~4.4.0",
+    "@react-navigation/native": "^7.0.0",
+    "@react-navigation/native-stack": "^7.0.0",
+    "@react-navigation/bottom-tabs": "^7.0.0",
+    "@supabase/supabase-js": "^2.103.0",
+    "@react-native-async-storage/async-storage": "^2.1.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.24.0",
+    "eslint": "^9.0.0"
+  }
+}
