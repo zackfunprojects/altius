@@ -219,7 +219,7 @@ export default function OnboardingFlow() {
                 <div className="space-y-4">
                   <SherpaTerminal>
                     <p className="text-signal-orange" role="alert">
-                      The trail is obscured. Please try again.
+                      {interviewError}
                     </p>
                   </SherpaTerminal>
                   <button
