@@ -127,9 +127,15 @@ Return ONLY the JSON object.`,
         .replace(/```json?\s*/g, "")
         .replace(/```\s*/g, "")
         .trim();
-      result = JSON.parse(cleaned);
+      const parsed = JSON.parse(cleaned);
+
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+        throw new Error("Unexpected response shape");
+      }
+
+      result = parsed;
     } catch {
-      console.error("Failed to parse skill refresh:", text.slice(0, 300));
+      console.error("Failed to parse skill refresh response");
       return new Response(
         JSON.stringify({ error: "Failed to generate refresh exercises. Please try again." }),
         { status: 500, headers: { ...cors, "Content-Type": "application/json" } }
@@ -139,11 +145,15 @@ Return ONLY the JSON object.`,
     result.exercises = Array.isArray(result.exercises) ? result.exercises : [];
 
     // Update last_refreshed_at
-    await supabase
+    const { error: updateError } = await supabase
       .from("trek_notebook")
       .update({ last_refreshed_at: new Date().toISOString() })
       .eq("id", notebook_entry_id)
       .eq("user_id", authUserId);
+
+    if (updateError) {
+      console.error("Failed to update last_refreshed_at:", updateError.message);
+    }
 
     return new Response(
       JSON.stringify(result),

@@ -154,7 +154,8 @@ export default function SkillRefresh({ entry, onClose, subscriptionTier }) {
       )}
 
       {/* Next button */}
-      {answers[currentIndex] !== undefined && (
+      {answers[currentIndex] !== undefined &&
+        (currentExercise.type !== 'short_answer' || answers[currentIndex]?.trim()) && (
         <button
           onClick={currentIndex < exercises.length - 1 ? handleNext : onClose}
           className="w-full py-2.5 bg-summit-cobalt text-white font-ui font-semibold text-sm rounded-lg hover:bg-summit-cobalt/90 transition-colors"

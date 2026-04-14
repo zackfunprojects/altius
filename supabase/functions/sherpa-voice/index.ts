@@ -40,7 +40,7 @@ serve(async (req: Request) => {
     }
 
     const body = await req.json();
-    const { trek_id, section_id, audio_base64, conversation_history } = body;
+    const { trek_id, section_id, audio_base64, conversation_history, transcribe_only } = body;
 
     if (!audio_base64 || typeof audio_base64 !== "string") {
       throw new ValidationError("audio_base64 is required");
@@ -88,6 +88,14 @@ serve(async (req: Request) => {
       );
     }
 
+    // Transcript-only mode: skip Claude + TTS, just return transcript
+    if (transcribe_only) {
+      return new Response(
+        JSON.stringify({ transcript, response_text: null, audio_base64: null }),
+        { headers: { ...cors, "Content-Type": "application/json" } }
+      );
+    }
+
     // Step 2: Get Sherpa response via Claude
     // Build context messages from conversation history
     const messages: Array<{ role: string; content: string }> = [];
@@ -102,13 +110,14 @@ serve(async (req: Request) => {
 
     messages.push({ role: "user", content: transcript });
 
-    // Fetch trek context for Sherpa
+    // Fetch trek context for Sherpa (verify ownership)
     let contextBlock = "";
     if (trek_id) {
       const { data: trek } = await supabase
         .from("treks")
-        .select("trek_name, skill_description, difficulty")
+        .select("trek_name, skill_description, difficulty, user_id")
         .eq("id", trek_id)
+        .eq("user_id", authUserId)
         .single();
 
       if (trek) {

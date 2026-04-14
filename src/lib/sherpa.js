@@ -213,13 +213,14 @@ export async function analyzeScreen({ trekId, screenshotBase64, toolName, curren
  * @param {Array} [params.conversationHistory] - Prior messages
  * @returns {Promise<Object>} { transcript, response_text, audio_base64 }
  */
-export async function voiceChat({ trekId, sectionId, audioBase64, conversationHistory }) {
+export async function voiceChat({ trekId, sectionId, audioBase64, conversationHistory, transcribeOnly }) {
   const { data, error } = await supabase.functions.invoke('sherpa-voice', {
     body: {
       trek_id: trekId || null,
       section_id: sectionId || null,
       audio_base64: audioBase64,
       conversation_history: conversationHistory || [],
+      transcribe_only: transcribeOnly || false,
     },
   })
 

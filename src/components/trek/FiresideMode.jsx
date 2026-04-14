@@ -181,7 +181,7 @@ export default function FiresideMode({ open, onClose, trekId, sectionId }) {
               )}
             </button>
             <p className="font-ui text-catalog-cream/40 text-xs">
-              {recording ? 'Release to send' : processing ? 'Processing...' : 'Hold to speak'}
+              {recording ? 'Click to send' : processing ? 'Processing...' : 'Click to speak'}
             </p>
           </>
         )}

@@ -18,11 +18,19 @@ export async function startRecording() {
     resolveBlob = resolve
   })
 
-  const recorder = new MediaRecorder(stream, {
-    mimeType: MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-      ? 'audio/webm;codecs=opus'
-      : 'audio/webm',
-  })
+  // Pick best supported MIME type
+  let mimeType = 'audio/webm'
+  if (typeof MediaRecorder.isTypeSupported === 'function') {
+    if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+      mimeType = 'audio/webm;codecs=opus'
+    } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+      mimeType = 'audio/mp4'
+    } else if (MediaRecorder.isTypeSupported('audio/ogg')) {
+      mimeType = 'audio/ogg'
+    }
+  }
+
+  const recorder = new MediaRecorder(stream, { mimeType })
 
   recorder.ondataavailable = (e) => {
     if (e.data.size > 0) chunks.push(e.data)
@@ -85,25 +93,32 @@ export function blobToBase64(blob) {
  */
 export function playAudioBase64(base64, mimeType = 'audio/mp3') {
   return new Promise((resolve, reject) => {
-    const bytes = atob(base64)
-    const buffer = new Uint8Array(bytes.length)
-    for (let i = 0; i < bytes.length; i++) {
-      buffer[i] = bytes.charCodeAt(i)
-    }
-    const blob = new Blob([buffer], { type: mimeType })
-    const url = URL.createObjectURL(blob)
-    const audio = new Audio(url)
+    try {
+      const bytes = atob(base64)
+      const buffer = new Uint8Array(bytes.length)
+      for (let i = 0; i < bytes.length; i++) {
+        buffer[i] = bytes.charCodeAt(i)
+      }
+      const blob = new Blob([buffer], { type: mimeType })
+      const url = URL.createObjectURL(blob)
+      const audio = new Audio(url)
 
-    audio.onended = () => {
-      URL.revokeObjectURL(url)
-      resolve()
-    }
-    audio.onerror = (e) => {
-      URL.revokeObjectURL(url)
+      audio.onended = () => {
+        URL.revokeObjectURL(url)
+        resolve()
+      }
+      audio.onerror = (e) => {
+        URL.revokeObjectURL(url)
+        reject(e)
+      }
+
+      audio.play().catch((e) => {
+        URL.revokeObjectURL(url)
+        reject(e)
+      })
+    } catch (e) {
       reject(e)
     }
-
-    audio.play()
   })
 }
 

@@ -133,9 +133,17 @@ Return ONLY the JSON object.`,
         .replace(/```json?\s*/g, "")
         .replace(/```\s*/g, "")
         .trim();
-      result = JSON.parse(cleaned);
+      const parsed = JSON.parse(cleaned);
+
+      // Validate shape - must be a plain object, not array/scalar
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+        throw new Error("Unexpected response shape");
+      }
+
+      result = parsed;
     } catch {
-      console.error("Failed to parse screen analysis:", text.slice(0, 300));
+      // Avoid logging screen-derived content that may contain PII/secrets
+      console.error("Failed to parse screen analysis response");
       return new Response(
         JSON.stringify({ error: "Failed to analyze screen. Please try again." }),
         { status: 500, headers: { ...cors, "Content-Type": "application/json" } }

@@ -37,8 +37,8 @@ export default function VoiceResponseLedge({ spec, onSubmit }) {
       const blob = await stopRecording(recorderRef, getBlobRef)
       const base64 = await blobToBase64(blob)
 
-      // Transcribe via sherpa-voice (we only need the transcript, not the response)
-      const result = await voiceChat({ audioBase64: base64 })
+      // Transcribe only - skip Claude response and TTS for exercise submissions
+      const result = await voiceChat({ audioBase64: base64, transcribeOnly: true })
       setTranscript(result.transcript || '')
     } catch (err) {
       setError(err.message || 'Failed to transcribe. Please try again.')

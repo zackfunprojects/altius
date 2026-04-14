@@ -23,21 +23,38 @@ export default function CoachingPanel({ open, onClose, trekId, subscriptionTier 
     try {
       // Capture screen
       const stream = await navigator.mediaDevices.getDisplayMedia({
-        video: { mediaSource: 'screen' },
+        video: true,
       })
 
       const track = stream.getVideoTracks()[0]
-      const imageCapture = new ImageCapture(track)
-      const bitmap = await imageCapture.grabFrame()
 
-      // Convert to base64 PNG
-      const canvas = document.createElement('canvas')
-      canvas.width = bitmap.width
-      canvas.height = bitmap.height
-      const ctx = canvas.getContext('2d')
-      ctx.drawImage(bitmap, 0, 0)
-      const dataUrl = canvas.toDataURL('image/png')
-      const base64 = dataUrl.split(',')[1]
+      // Use video element as fallback for browsers without ImageCapture (Firefox)
+      let base64
+      if (typeof ImageCapture !== 'undefined') {
+        const imageCapture = new ImageCapture(track)
+        const bitmap = await imageCapture.grabFrame()
+        const canvas = document.createElement('canvas')
+        canvas.width = bitmap.width
+        canvas.height = bitmap.height
+        const ctx = canvas.getContext('2d')
+        ctx.drawImage(bitmap, 0, 0)
+        base64 = canvas.toDataURL('image/png').split(',')[1]
+      } else {
+        // Fallback: draw video frame to canvas
+        const video = document.createElement('video')
+        video.srcObject = stream
+        video.muted = true
+        await video.play()
+        await new Promise((r) => setTimeout(r, 200)) // Let frame render
+        const canvas = document.createElement('canvas')
+        canvas.width = video.videoWidth
+        canvas.height = video.videoHeight
+        const ctx = canvas.getContext('2d')
+        ctx.drawImage(video, 0, 0)
+        base64 = canvas.toDataURL('image/png').split(',')[1]
+        video.pause()
+        video.srcObject = null
+      }
 
       // Stop screen capture
       stream.getTracks().forEach((t) => t.stop())
@@ -95,7 +112,7 @@ export default function CoachingPanel({ open, onClose, trekId, subscriptionTier 
                 {'>'} Over-the-Shoulder coaching requires a Pro subscription.
               </p>
               <p className="font-mono text-phosphor-green/40 text-xs">
-                The Sherpa watches your screen in real tools and coaches live.
+                The Sherpa watches your screen in real time and coaches live.
               </p>
             </div>
           ) : (

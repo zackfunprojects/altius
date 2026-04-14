@@ -38,7 +38,8 @@ export default function FileUploadLedge({ spec, onSubmit }) {
     setError(null)
 
     try {
-      const ext = file.name.split('.').pop() || 'bin'
+      const parts = file.name.split('.')
+      const ext = parts.length > 1 ? parts.pop() : 'bin'
       const path = `exercise-files/${user.id}/${Date.now()}.${ext}`
 
       const { error: uploadError } = await supabase.storage
