@@ -365,10 +365,16 @@ export default function OnboardingFlow() {
                     proposal={proposal}
                     onBegin={handleBeginTrek}
                     onUpgrade={async () => {
+                      setActivateError(null)
                       try {
-                        await createCheckoutSession()
-                      } catch {
-                        setActivateError('Could not start checkout. Please try again.')
+                        const url = await createCheckoutSession()
+                        if (url) {
+                          window.location.href = url
+                        } else {
+                          setActivateError('No checkout URL returned. Please try again.')
+                        }
+                      } catch (err) {
+                        setActivateError(err.message || 'Could not start checkout. Please try again.')
                       }
                     }}
                     onRescope={() => {
