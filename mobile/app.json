@@ -1,0 +1,34 @@
+{
+  "expo": {
+    "name": "Altius Pocket",
+    "slug": "altius-pocket",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./src/assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "splash": {
+      "backgroundColor": "#0D0F14"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.altius.pocket",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "Altius uses the microphone for voice dialogue with the Sherpa and voice response exercises."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0D0F14"
+      },
+      "package": "com.altius.pocket",
+      "permissions": ["RECORD_AUDIO"]
+    },
+    "plugins": [
+      "expo-secure-store",
+      ["expo-av", {
+        "microphonePermission": "Altius uses the microphone for voice dialogue with the Sherpa and voice response exercises."
+      }]
+    ]
+  }
+}
