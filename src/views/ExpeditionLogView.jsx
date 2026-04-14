@@ -7,6 +7,7 @@ import FourColorBar from '../components/brand/FourColorBar'
 import WordMark from '../components/brand/WordMark'
 import ElevationCounter from '../components/brand/ElevationCounter'
 import SherpaTerminal from '../components/brand/SherpaTerminal'
+import PageTitle from '../components/ui/PageTitle'
 
 const EVENT_ICONS = {
   trek_started: '>>',
@@ -74,6 +75,7 @@ export default function ExpeditionLogView() {
 
   return (
     <div className="min-h-screen bg-terminal-dark flex flex-col">
+      <PageTitle title="Expedition Log" />
       <div className="bg-catalog-cream">
         <FourColorBar />
       </div>

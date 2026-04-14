@@ -8,6 +8,7 @@ import ElevationCounter from '../components/brand/ElevationCounter'
 import SherpaTerminal from '../components/brand/SherpaTerminal'
 import SummitCard from '../components/summit/SummitCard'
 import SkillRefresh from '../components/summit/SkillRefresh'
+import PageTitle from '../components/ui/PageTitle'
 
 export default function TrekNotebookView() {
   const navigate = useNavigate()
@@ -17,6 +18,7 @@ export default function TrekNotebookView() {
 
   return (
     <div className="min-h-screen bg-catalog-cream flex flex-col">
+      <PageTitle title="Trek Notebook" />
       <FourColorBar />
 
       {/* Header */}

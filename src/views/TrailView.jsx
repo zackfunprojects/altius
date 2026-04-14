@@ -12,6 +12,7 @@ import { getExpeditionDay } from '../lib/expedition'
 import ElevationCounter from '../components/brand/ElevationCounter'
 import MountainScene from '../components/trail/MountainScene'
 import EventOverlay from '../components/trail/EventOverlay'
+import PageTitle from '../components/ui/PageTitle'
 
 const DISMISSED_KEY = 'altius_dismissed_events'
 
@@ -101,6 +102,7 @@ export default function TrailView() {
 
   return (
     <div className="min-h-screen bg-terminal-dark flex flex-col">
+      <PageTitle title="Trail" />
       {/* Nav bar */}
       <nav className="px-4 sm:px-6 py-3 flex items-center justify-between">
         <button

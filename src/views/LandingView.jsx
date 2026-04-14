@@ -1,14 +1,16 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useProfile } from '../hooks/useProfile'
 import { useActiveTrek } from '../hooks/useActiveTrek'
 import { getMorningQuestion } from '../lib/sherpa'
+import { abandonTrek } from '../lib/trek'
 import FourColorBar from '../components/brand/FourColorBar'
 import WordMark from '../components/brand/WordMark'
 import ElevationCounter from '../components/brand/ElevationCounter'
 import DifficultyBadge from '../components/brand/DifficultyBadge'
 import MorningQuestion from '../components/MorningQuestion'
+import PageTitle from '../components/ui/PageTitle'
 
 export default function LandingView() {
   const navigate = useNavigate()
@@ -18,6 +20,22 @@ export default function LandingView() {
 
   const [morningQuestion, setMorningQuestion] = useState(null)
   const [showMorningQuestion, setShowMorningQuestion] = useState(false)
+  const [showAbandonConfirm, setShowAbandonConfirm] = useState(false)
+  const [abandoning, setAbandoning] = useState(false)
+  const [abandonError, setAbandonError] = useState(null)
+
+  const handleAbandon = useCallback(async () => {
+    if (!trek?.id || abandoning) return
+    setAbandoning(true)
+    setAbandonError(null)
+    try {
+      await abandonTrek(trek.id)
+      window.location.reload()
+    } catch (err) {
+      setAbandonError(err.message || 'Failed to abandon trek. Please try again.')
+      setAbandoning(false)
+    }
+  }, [trek, abandoning])
 
   // Check for morning question on mount
   useEffect(() => {
@@ -45,6 +63,7 @@ export default function LandingView() {
 
   return (
     <div className="min-h-screen bg-catalog-cream flex flex-col">
+      <PageTitle title="Home" />
       <FourColorBar />
       <header className="px-4 sm:px-6 py-4 flex items-center justify-between border-b border-trail-brown/20">
         <WordMark size="sm" />
@@ -149,6 +168,42 @@ export default function LandingView() {
                   Talk to the Sherpa
                 </button>
               </div>
+
+              {/* Abandon trek */}
+              <div className="text-center">
+                {!showAbandonConfirm ? (
+                  <button
+                    onClick={() => setShowAbandonConfirm(true)}
+                    className="text-xs font-ui text-trail-brown/40 hover:text-signal-orange transition-colors"
+                  >
+                    Abandon this trek
+                  </button>
+                ) : (
+                  <div className="p-3 border border-signal-orange/20 rounded-lg bg-signal-orange/5">
+                    <p className="text-xs font-ui text-signal-orange mb-2">
+                      Are you sure? This cannot be undone.
+                    </p>
+                    {abandonError && (
+                      <p className="text-xs font-ui text-signal-orange mb-2">{abandonError}</p>
+                    )}
+                    <div className="flex gap-2 justify-center">
+                      <button
+                        onClick={() => setShowAbandonConfirm(false)}
+                        className="px-3 py-1 text-xs font-ui text-trail-brown border border-trail-brown/20 rounded"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleAbandon}
+                        disabled={abandoning}
+                        className="px-3 py-1 text-xs font-ui text-white bg-signal-orange rounded disabled:opacity-50"
+                      >
+                        {abandoning ? 'Abandoning...' : 'Confirm Abandon'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           ) : (
             <div className="text-center space-y-6">
@@ -160,6 +215,12 @@ export default function LandingView() {
                   No active trek. The mountain is waiting.
                 </p>
               </div>
+              <button
+                onClick={() => navigate('/onboarding')}
+                className="w-full py-3 bg-summit-cobalt text-white font-ui font-semibold rounded-lg hover:bg-summit-cobalt/90 transition-colors"
+              >
+                Start a New Trek
+              </button>
               <button
                 onClick={() => navigate('/chat')}
                 className="w-full py-3 border border-phosphor-green/30 text-phosphor-green bg-terminal-dark font-mono rounded-lg hover:bg-terminal-dark/90 hover:border-phosphor-green/50 transition-colors"

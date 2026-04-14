@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import FourColorBar from '../components/brand/FourColorBar'
@@ -18,6 +19,7 @@ function validateEmail(email) {
 }
 
 export default function AuthView() {
+  const navigate = useNavigate()
   const { signIn, signUp } = useAuth()
   const [isSignUp, setIsSignUp] = useState(false)
   const [email, setEmail] = useState('')
@@ -209,6 +211,18 @@ export default function AuthView() {
                 </p>
               )}
             </div>
+
+            {!isSignUp && (
+              <div className="text-right">
+                <button
+                  type="button"
+                  onClick={() => navigate('/reset-password')}
+                  className="text-xs font-ui text-summit-cobalt hover:underline"
+                >
+                  Forgot password?
+                </button>
+              </div>
+            )}
 
             {error && (
               <p className="text-signal-orange text-sm font-ui">{error}</p>

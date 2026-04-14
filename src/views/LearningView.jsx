@@ -16,6 +16,7 @@ import SherpaTerminal from '../components/brand/SherpaTerminal'
 import TrailMap from '../components/trek/TrailMap'
 import LessonRenderer from '../components/trek/LessonRenderer'
 import SherpaAside from '../components/trek/SherpaAside'
+import PageTitle from '../components/ui/PageTitle'
 
 export default function LearningView() {
   const navigate = useNavigate()
@@ -206,6 +207,7 @@ export default function LearningView() {
 
   return (
     <div className="min-h-screen bg-catalog-cream flex flex-col">
+      <PageTitle title="Learning" />
       <FourColorBar />
 
       {/* Top bar */}
